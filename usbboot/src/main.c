@@ -28,7 +28,7 @@
 
 #define CONFIG_FILE_PATH "/etc/xburst-tools/usbboot.cfg"
 
-extern struct ingenic_dev ingenic_dev;
+struct ingenic_dev ingenic_dev;
 extern struct hand hand;
 
 static void help(void)
@@ -58,10 +58,9 @@ static struct option opts[] = {
 
 int main(int argc, char **argv)
 {
-	int command = 0;
 	char *cptr;
 	char com_buf[256] = {0};
-	char *cmdpt;
+	char *cmdpt = NULL;
 	char *cfgpath = CONFIG_FILE_PATH;
 
 	printf("usbboot - Ingenic XBurst USB Boot Utility\n"
@@ -83,7 +82,6 @@ int main(int argc, char **argv)
 			print_version();
 			exit(EXIT_SUCCESS);
 		case 'c':
-			command = 1;
 			cmdpt = optarg;
 			break;
 		case 'f':
@@ -95,10 +93,10 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if ((getuid()) || (getgid())) {
+/*	if ((getuid()) || (getgid())) {
 		fprintf(stderr, "Error - you must be root to run '%s'\n", argv[0]);
 		return EXIT_FAILURE;
-	}
+	}*/
 
 	if (usb_ingenic_init(&ingenic_dev) < 1)
 	 	return EXIT_FAILURE;
@@ -106,7 +104,7 @@ int main(int argc, char **argv)
 	if (parse_configure(&hand, cfgpath) < 1)
 		return EXIT_FAILURE;
 
-	if (command) {		/* direct run command */
+	if (cmdpt) {		/* direct run command */
 		char *delim=";";
 		char *p;
 		p = strtok(cmdpt, delim);
@@ -128,8 +126,7 @@ int main(int argc, char **argv)
 		if (cptr == NULL)
 			continue;
 
-		if (command_handle(com_buf) == -1 )
-			break;
+		command_handle(com_buf);
 	}
 
 out:

@@ -22,8 +22,7 @@
 #ifndef __USB_BOOT_H__
 #define __USB_BOOT_H__
 
-#define BULK_OUT_BUF_SIZE 0x21000
-#define BULK_IN_BUF_SIZE 0x21000
+#define BULK_BUF_SIZE (128 * 4096)
 
 enum UDC_STATE
 {
@@ -43,7 +42,8 @@ enum USB_JZ4740_REQUEST	/* add for USB_BOOT */
 	VR_NOR_OPS,
 	VR_NAND_OPS,
 	VR_SDRAM_OPS,
-	VR_CONFIGRATION
+	VR_CONFIGRATION,
+    VR_MEM_OPS,
 };
 
 #endif	/* __USB_BOOT_H__ */

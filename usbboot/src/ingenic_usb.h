@@ -35,7 +35,8 @@
 #define VR_NAND_OPS		0x07
 #define VR_SDRAM_OPS		0x08
 #define VR_CONFIGRATION		0x09
-#define VR_GET_NUM		0x0a
+#define VR_MEM_OPS		0x0a
+#define VR_GET_NUM		0x0b
 
 #define STAGE_ADDR_MSB(addr) ((addr) >> 16)
 #define STAGE_ADDR_LSB(addr) ((addr) & 0xffff)
@@ -57,20 +58,26 @@ struct ingenic_dev {
 	uint8_t interface;
 	char cpu_info_buff[9];
 	char *file_buff;
-	unsigned int file_len;
+	int file_len;
 };
 
 int usb_ingenic_init(struct ingenic_dev *ingenic_dev);
 int usb_get_ingenic_cpu(struct ingenic_dev *ingenic_dev);
 int usb_ingenic_upload(struct ingenic_dev *ingenic_dev, int stage);
 void usb_ingenic_cleanup(struct ingenic_dev *ingenic_dev);
-int usb_send_data_address_to_ingenic(struct ingenic_dev *ingenic_dev, 
-				     unsigned int stage_addr);
-int usb_send_data_to_ingenic(struct ingenic_dev *ingenic_dev);
-int usb_send_data_length_to_ingenic(struct ingenic_dev *ingenic_dev,
-				    int len);
 int usb_ingenic_nand_ops(struct ingenic_dev *ingenic_dev, int ops);
-int usb_read_data_from_ingenic(struct ingenic_dev *ingenic_dev,unsigned char *buff, unsigned int len);
+int usb_ingenic_mem_ops(struct ingenic_dev *ingenic_dev, int ops);
+int usb_send_data_address_to_ingenic(struct ingenic_dev *ingenic_dev,
+				     unsigned int stage_addr);
+int usb_send_data_length_to_ingenic(struct ingenic_dev *ingenic_dev,
+                                    uint32_t len);
+int usb_send_data_to_ingenic(struct ingenic_dev *ingenic_dev, const char *data,
+                             int size);
+int usb_read_data_from_ingenic(struct ingenic_dev *ingenic_dev, char *buffer,
+                               int size);
+int usb_ingenic_start(struct ingenic_dev *ingenic_dev, int rqst, int stage_addr);
+int usb_ingenic_sdram_ops(struct ingenic_dev *ingenic_dev, int ops);
+int usb_ingenic_configration(struct ingenic_dev *ingenic_dev, int ops);
 
 #endif	/* __INGENIC_USB_H__ */
 

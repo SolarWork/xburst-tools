@@ -1,4 +1,4 @@
-AM_CFLAGS = -pedantic -Wall -W -O1 -g3 -std=gnu99 -lusb -lconfuse
+AM_CFLAGS = -pedantic -Wall -Werror -O1 -g3 -std=gnu99 -lusb -lconfuse
 
 xburst-tools_version.h:
 	echo -e '#ifndef XBURST_TOOLS_VERSION' \
@@ -6,9 +6,12 @@ xburst-tools_version.h:
 	'\n#endif' > xburst-tools_version.h
 BUILT_SOURCES = xburst-tools_version.h
 
-bin_PROGRAMS = usbboot
-usbboot_SOURCES = cmd.c  command_line.c  ingenic_cfg.c  \
-	ingenic_usb.c  main.c
+bin_PROGRAMS = usbboot usbboot_server
+usbboot_SOURCES = cmd.c command_line.c ingenic_cfg.c \
+	ingenic_usb.c main.c nand.c mem.c
+
+usbboot_server_SOURCES = cmd.c ingenic_cfg.c \
+	ingenic_usb.c server.c nand.c mem.c
 
 prefix = /usr
 datadir = /usr/share/xburst-tools

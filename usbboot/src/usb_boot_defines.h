@@ -134,25 +134,9 @@ struct hand {
 	struct fw_args fw_args;
 } __attribute__((packed));
 
-struct nand_in {
-	unsigned char dev;
-	unsigned char max_chip;
-	unsigned char *buf;
-	unsigned char *cs_map;
-	unsigned int start;
-	unsigned int length;
-	unsigned int option;
-
-	int (* check) (unsigned char *,unsigned char *,unsigned int);
-};
-
-struct nand_out {
-	unsigned char *status;
-};
-
 struct sdram_in {
 	unsigned char dev;
-	unsigned char *buf;
+	char *buf;
 	unsigned int start;
 	unsigned int length;
 	unsigned int option;

@@ -21,11 +21,10 @@
 #include "udc.h"
 #include "usb_boot.h"
 
-#define dprintf(x...)  
+#define dprintf(x...)
 #define TXFIFOEP0 USB_FIFO_EP0
 
-u32 Bulk_in_buf[BULK_IN_BUF_SIZE];
-u32 Bulk_out_buf[BULK_OUT_BUF_SIZE];
+u32 Bulk_buf[BULK_BUF_SIZE];
 u32 Bulk_in_size, Bulk_in_finish, Bulk_out_size;
 u16 handshake_PKT[4] = {0, 0, 0, 0};
 u8 udc_state;
@@ -35,7 +34,7 @@ static u32 tx_buf[32];
 static u32 tx_size, rx_size, finished, fifo;
 static u8 ep0state, USB_Version;
 
-static u32 fifoaddr[] = 
+static u32 fifoaddr[] =
 {
 	TXFIFOEP0, TXFIFOEP0+4 ,TXFIFOEP0+8
 };
@@ -88,7 +87,7 @@ static void udcWriteFifo(u8 *ptr, int size)
 			while (q--)
 				REG8(fifo) = *c++;
 		}
-	} 
+	}
 }
 
 void HW_SendPKT(int ep, const u8 *buf, int size)
@@ -114,7 +113,7 @@ void HW_SendPKT(int ep, const u8 *buf, int size)
 		tx_size = size;
 		finished = 0;
 		memcpy((void *)tx_buf, buf, size);
-		ep0state = USB_EP0_TX;		
+		ep0state = USB_EP0_TX;
 	}
 }
 
@@ -131,7 +130,7 @@ void HW_GetPKT(int ep, const u8 *buf, int size)
 	memcpy((u8 *)rx_buf, (u8 *)((u32)rx_buf+size), rx_size);
 }
 
-static USB_DeviceDescriptor devDesc = 
+static USB_DeviceDescriptor devDesc =
 {
 	sizeof(USB_DeviceDescriptor),
 	DEVICE_DESCRIPTOR,	//1
@@ -220,7 +219,7 @@ void sendDevDescString(int size)
 		size = 26;
 	str_ret[0] = (0x0300 | size);
 	HW_SendPKT(0, (u8 *)str_ret,size);
-	
+
 }
 
 void sendDevDesc(int size)
@@ -340,7 +339,7 @@ void usbHandleStandDevReq(u8 *buf)
 			}
 		dprintf("\nSet ep0state=TX!");
 		ep0state=USB_EP0_TX;
-		
+
 		break;
 	case SET_ADDRESS:
 		dprintf("\nSET_ADDRESS!");
@@ -407,12 +406,16 @@ void usbHandleVendorReq(u8 *buf)
 		SDRAM_OPS_Handle(buf);
 		Bulk_out_size = 0;
 		break;
+    case VR_MEM_OPS:
+        MEM_OPS_Handle(buf);
+		Bulk_out_size = 0;
+        break;
 	}
 }
 
 void Handshake_PKT()
 {
-	
+
 	if (udc_state!=IDLE)
 	{
 		HW_SendPKT(1,(u8 *)handshake_PKT,sizeof(handshake_PKT));
@@ -483,7 +486,7 @@ void EP0_Handler ()
 		}
 		rx_size = 0;
 	}
-	
+
 	if (ep0state == USB_EP0_TX) {
 		fifo=fifoaddr[0];
 		if (tx_size - finished <= 64) {
@@ -513,12 +516,12 @@ void EPIN_Handler(u8 EP)
 	}
 
 	if (Bulk_in_size - Bulk_in_finish <= fifosize[EP]) {
-		udcWriteFifo((u8 *)((u32)Bulk_in_buf+Bulk_in_finish),
+		udcWriteFifo((u8 *)((u32)Bulk_buf+Bulk_in_finish),
 			     Bulk_in_size - Bulk_in_finish);
 		usb_setw(USB_REG_INCSR, USB_INCSR_INPKTRDY);
 		Bulk_in_finish = Bulk_in_size;
 	} else {
-		udcWriteFifo((u8 *)((u32)Bulk_in_buf+Bulk_in_finish),
+		udcWriteFifo((u8 *)((u32)Bulk_buf+Bulk_in_finish),
 			    fifosize[EP]);
 		usb_setw(USB_REG_INCSR, USB_INCSR_INPKTRDY);
 		Bulk_in_finish += fifosize[EP];
@@ -531,7 +534,13 @@ void EPOUT_Handler(u8 EP)
 	jz_writeb(USB_REG_INDEX, EP);
 	size = jz_readw(USB_REG_OUTCOUNT);
 	fifo = fifoaddr[EP];
-	udcReadFifo((u8 *)((u32)Bulk_out_buf+Bulk_out_size), size);
+
+	if (size + Bulk_out_size > BULK_BUF_SIZE) {
+		serial_puts("\n Bulk_out overflow");
+		return;
+	}
+
+	udcReadFifo((u8 *)((u32)Bulk_buf+Bulk_out_size), size);
 	usb_clearb(USB_REG_OUTCSR,USB_OUTCSR_OUTPKTRDY);
 	Bulk_out_size += size;
 	dprintf("\nEPOUT_handle return!");
@@ -546,13 +555,13 @@ void udc4740Proc ()
 	IntrUSB = jz_readb(USB_REG_INTRUSB);
 	IntrIn  = jz_readw(USB_REG_INTRIN);
 	IntrOut = jz_readw(USB_REG_INTROUT);
-		
+
 	if ( IntrUSB == 0 && IntrIn == 0 && IntrOut == 0)
 		return;
-		
+
 	if (IntrIn & 2) {
 		dprintf("\nUDC EP1 IN operation!");
-		EPIN_Handler(1);	     
+		EPIN_Handler(1);
 	}
 
 	if (IntrOut & 2) {
@@ -561,10 +570,10 @@ void udc4740Proc ()
 	}
 
 	if (IntrUSB & USB_INTR_RESET) {
-		dprintf("\nUDC reset intrupt!");  
+		dprintf("\nUDC reset intrupt!");
 		udc_reset();
 	}
-		
+
 /* Check for endpoint 0 interrupt */
 	if (IntrIn & USB_INTR_EP0) {
 		dprintf("\nUDC EP0 operations!");

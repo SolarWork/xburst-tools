@@ -18,7 +18,7 @@
 
 #include <errno.h>
 #include <confuse.h>
-#include <unistd.h>   
+#include <unistd.h>
 #include <string.h>
 #include "ingenic_cfg.h"
 #include "usb_boot_defines.h"
@@ -94,7 +94,7 @@ int check_dump_cfg(struct hand *hand)
 	/* check NAND */
 	if ( hand->nand_ps < 2048 && hand->nand_os > 16 ) {
 		printf(" PAGESIZE or OOBSIZE setting invalid!\n");
-		printf(" PAGESIZE is %d,\t OOBSIZE is %d\n", 
+		printf(" PAGESIZE is %d,\t OOBSIZE is %d\n",
 		       hand->nand_ps, hand->nand_os);
 		return 0;
 	}
@@ -105,7 +105,7 @@ int check_dump_cfg(struct hand *hand)
 
 	if ( hand->nand_ps > 512 && hand->nand_os <= 16 ) {
 		printf(" PAGESIZE or OOBSIZE setting invalid!\n");
-		printf(" PAGESIZE is %d,\t OOBSIZE is %d\n", 
+		printf(" PAGESIZE is %d,\t OOBSIZE is %d\n",
 		       hand->nand_ps, hand->nand_os);
 		return 0;
 	}
@@ -123,7 +123,7 @@ int check_dump_cfg(struct hand *hand)
 		((unsigned int)hand->fw_args.cpu_speed * hand->fw_args.ext_clk) / hand->fw_args.phm_div);
 
 	printf("SDRAM Total size is %d MB, work in %d bank and %d bit mode\n",
-		total_size / 0x100000, 2 * (hand->fw_args.bank_num + 1), 
+		total_size / 0x100000, 2 * (hand->fw_args.bank_num + 1),
 	       16 * (2 - hand->fw_args.bus_width));
 
 	printf("Nand page per block %d, "
@@ -143,18 +143,20 @@ int check_dump_cfg(struct hand *hand)
 
 int parse_configure(struct hand *hand, char * file_path)
 {
+    int cpu_speed;
 	if (access(file_path, F_OK)) {
 		fprintf(stderr, "Error - can't read configure file %s.\n",
 			file_path);
 		return -1;
 	}
 
+
 	hand_init_def(hand);
 
 	cfg_opt_t opts[] = {
 		CFG_INT("BOUDRATE", 57600, CFGF_NONE),
 		CFG_SIMPLE_INT("EXTCLK", &hand->fw_args.ext_clk),
-		CFG_SIMPLE_INT("CPUSPEED", &hand->fw_args.cpu_speed),
+		CFG_SIMPLE_INT("CPUSPEED", &cpu_speed),
 		CFG_SIMPLE_INT("PHMDIV", &hand->fw_args.phm_div),
 		CFG_SIMPLE_INT("USEUART", &hand->fw_args.use_uart),
 
@@ -200,12 +202,12 @@ int parse_configure(struct hand *hand, char * file_path)
 		hand->fw_args.bus_width = 0;
 	else
 		hand->fw_args.bus_width = 1;
-	hand->fw_args.bank_num = hand->fw_args.bank_num / 4; 
-	hand->fw_args.cpu_speed = hand->fw_args.cpu_speed / hand->fw_args.ext_clk;
-	
+	hand->fw_args.bank_num = hand->fw_args.bank_num / 4;
+	hand->fw_args.cpu_speed = cpu_speed / hand->fw_args.ext_clk;
+
 	total_size = (unsigned int)
-		(2 << (hand->fw_args.row_addr + hand->fw_args.col_addr - 1)) * 2 
-		* (hand->fw_args.bank_num + 1) * 2 
+		(2 << (hand->fw_args.row_addr + hand->fw_args.col_addr - 1)) * 2
+		* (hand->fw_args.bank_num + 1) * 2
 		* (2 - hand->fw_args.bus_width);
 
 	if (check_dump_cfg(hand) < 1)

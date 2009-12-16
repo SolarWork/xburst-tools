@@ -19,40 +19,34 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include "usb_boot_defines.h"
 #include "ingenic_usb.h"
 #include "cmd.h"
 #include "xburst-tools_version.h"
- 
+#include "nand.h"
+#include "mem.h"
+
 extern struct nand_in nand_in;
 extern struct sdram_in sdram_in;
-extern unsigned char code_buf[4 * 512 * 1024];
+static char code_buf[4 * 512 * 1024];
+extern struct ingenic_dev ingenic_dev;
+typedef int (*command_callback_t)(size_t argc, char *argv[]);
 
-int com_argc;
-char com_argv[MAX_ARGC][MAX_COMMAND_LENGTH];
+struct command {
+	const char *name;
+	command_callback_t callback;
+};
 
-static const char COMMAND[][COMMAND_NUM]=
+#define COMMAND(_name, _callback) {\
+	.name = _name, \
+	.callback = (command_callback_t)_callback, \
+}
+
+static const char COMMANDS[][COMMAND_NUM]=
 {
-	"",
-	"query",
-	"querya",
-	"erase",
-	"read",
-	"prog",
-	"nquery",
-	"nerase",
-	"nread",
-	"nreadraw",
-	"nreadoob", /* index 10 */
-	"nprog",
-	"help",
-	"version",
 	"go",
 	"fconfig",
-	"exit",
-	"readnand",
-	"gpios",
-	"gpioc",
 	"boot", /* index 20 */
 	"list",
 	"select",
@@ -63,10 +57,69 @@ static const char COMMAND[][COMMAND_NUM]=
 	"nmake",
 	"load",
 	"memtest",
-	"run"
+	"run",
 };
 
-static int handle_help(void)
+static unsigned long parse_number(const char *s, int *err)
+{
+	unsigned long val = 0;
+	unsigned int base = 10;
+	char *endptr;
+
+	if (s == 0 || *s == 0) {
+	    if (err)
+	        *err = 1;
+	    return 0;
+	}
+
+	if (*s == '0') {
+	    ++s;
+	    if (*s == 'x') {
+	        base = 16;
+	        ++s;
+	    } else if (*s != 0) {
+	        base = 8;
+	    }
+	} else if (*s == 'b') {
+	    ++s;
+	    base = 2;
+	}
+
+	val = strtoul(s, &endptr, base);
+
+	if (*endptr) {
+	    if (err)
+	        *err = 1;
+	    return 0;
+	}
+
+	if (err)
+	    *err = 0;
+
+	return val;
+}
+
+static unsigned long parse_number_print_error(const char *s, int *err)
+{
+	unsigned long value;
+	int err2 = 0;
+	value = parse_number(s, &err2);
+	if (err2) {
+	    fprintf(stderr, "Error: %s is not a number\n", s);
+	    if (err)
+	        ++err;
+	}
+
+	return value;
+}
+
+static int handle_exit()
+{
+	exit(0);
+	return 0;
+}
+
+static int handle_help()
 {
 	printf(" command support in current version:\n"
 	/* " query" */
@@ -74,253 +127,436 @@ static int handle_help(void)
 	/* " erase" */
 	/* " read" */
 	/* " prog" */
-	" nquery     query NAND flash info\n"
-	" nerase     erase NAND flash\n"
-	" nread      read NAND flash data with checking bad block and ECC\n"
-	" nreadraw   read NAND flash data without checking bad block and ECC\n"
-	" nreadoo    read NAND flash oob without checking bad block and ECC\n" /* index 10 */
-	" nprog      program NAND flash with data and ECC\n"
-	" help       print this help\n"
-	" version    show current USB Boot software version\n"
-	" go         execute program in SDRAM\n"
-	" fconfig    set USB Boot config file(not implement)\n"
-	" exit       quit from telnet session\n"
-	" readnand   read data from nand flash and store to SDRAM\n"
-	" gpios      set one GPIO to high level\n"
-	" gpioc      set one GPIO to low level\n"
-	" boot       boot device and make it in stage2\n" /* index 20 */
-	" list       show current device number can connect(not implement)\n"
+	" nquery        query NAND flash info\n"
+	" nerase        erase NAND flash\n"
+	" nread         read NAND flash data with checking bad block and ECC\n"
+	" nreadraw      read NAND flash data without checking bad block and ECC\n"
+	" nreadoo       read NAND flash oob without checking bad block and ECC\n" /* index 10 */
+	" nprog         program NAND flash with data and ECC\n"
+	" ndump         dump NAND flash data to file\n"
+	" help          print this help\n"
+	" version       show current USB Boot software version\n"
+	" go            execute program in SDRAM\n"
+	" fconfig       set USB Boot config file(not implement)\n"
+	" exit          quit from current session\n"
+	" readnand      read data from nand flash and store to SDRAM\n"
+	" boot          boot device and make it in stage2\n" /* index 20 */
+	" list          show current device number can connect(not implement)\n"
 	/* " select" */
 	/* " unselect" */
 	/* " chip" */
 	/* " unchip" */
-	" nmark      mark a bad block in NAND flash\n"
-	" nmake      read all data from nand flash and store to file(not implement)\n"
-	" load       load file data to SDRAM\n"
-	" memtest    do SDRAM test\n"
-	" run        run command script in file(implement by -c args)\n"
-	" sdprog     program SD card(not implement)\n"
-	" sdread     read data from SD card(not implement)\n");
-	return 1;
+	" nmark        mark a bad block in NAND flash\n"
+	" nmake        read all data from nand flash and store to file(not implement)\n"
+	" load         load file data to SDRAM\n"
+	" memtest      do SDRAM test\n"
+	" run          run command script in file(implement by -c args)\n"
+	" sdprog       program SD card(not implement)\n"
+	" sdread       read data from SD card(not implement)\n");
+
+	return 0;
 }
 
-static int handle_version(void)
+static int handle_version()
 {
-	printf(" USB Boot Software current version: %s\n", XBURST_TOOLS_VERSION);
-	return 1;
+	printf("USB Boot Software current version: %s\n", XBURST_TOOLS_VERSION);
+
+	return 0;
 }
 
-/* need transfer two para :blk_num ,start_blk */
-int handle_nerase(void)
+static int handle_boot()
 {
-	if (com_argc < 5) {
+	boot(&ingenic_dev, STAGE1_FILE_PATH, STAGE2_FILE_PATH);
+
+	return 0;
+}
+
+static int handle_nand_erase(size_t argc, char *argv[])
+{
+	uint32_t start_block, num_blocks;
+	unsigned int device_idx;
+	uint8_t nand_idx;
+	int err;
+
+	if (argc < 5) {
 		printf(" Usage: nerase (1) (2) (3) (4)\n"
-		       " 1:start block number\n"
-		       " 2:block length\n"
-		       " 3:device index number\n"
-		       " 4:flash chip index number\n");
+			   " 1:start block number\n"
+			   " 2:block length\n"
+			   " 3:device index number\n"
+			   " 4:flash chip index number\n");
 		return -1;
 	}
 
-	init_nand_in();
+	start_block = parse_number_print_error(argv[1], &err);
+	num_blocks =  parse_number_print_error(argv[2], &err);
+	device_idx =  parse_number_print_error(argv[3], &err);
+	nand_idx =    parse_number_print_error(argv[4], &err);
+	if (err)
+	    return err;
 
-	nand_in.start = atoi(com_argv[1]);
-	nand_in.length = atoi(com_argv[2]);
-	nand_in.dev = atoi(com_argv[3]);
-	if (atoi(com_argv[4]) >= MAX_DEV_NUM) {
+	if (nand_idx >= MAX_DEV_NUM) {
 		printf(" Flash index number overflow!\n");
 		return -1;
 	}
-	(nand_in.cs_map)[atoi(com_argv[4])] = 1;
 
-	if (nand_erase(&nand_in) < 1)
+	if (nand_erase(&ingenic_dev, nand_idx, start_block, num_blocks))
 		return -1;
 
-	return 1;
+	return 0;
 }
 
-int handle_nmark(void)
+static int handle_nand_mark(size_t argc, char *argv[])
 {
-	if (com_argc < 4) {
-		printf(" Usage: nerase (1) (2) (3)\n"
-		       " 1:bad block number\n"
-		       " 2:device index number\n"
-		       " 3:flash chip index number\n");
+	uint32_t block;
+	unsigned int device_idx;
+	uint8_t nand_idx;
+	int err = 0;
+
+	if (argc < 4) {
+		printf("Usage: nerase (1) (2) (3)\n"
+			   "1: bad block number\n"
+			   "2: device index number\n"
+			   "3: flash chip index number\n");
 		return -1;
 	}
-	init_nand_in();
 
-	nand_in.start = atoi(com_argv[1]);
-	nand_in.dev = atoi(com_argv[2]);
+	block =      parse_number_print_error(argv[1], &err);
+	device_idx = parse_number_print_error(argv[2], &err);
+	nand_idx =   parse_number_print_error(argv[3], &err);
+	if (err)
+	    return err;
 
-	if (atoi(com_argv[3])>=MAX_DEV_NUM) {
-		printf(" Flash index number overflow!\n");
+	if (nand_idx >= MAX_DEV_NUM) {
+		printf("Flash index number overflow!\n");
 		return -1;
 	}
-	(nand_in.cs_map)[atoi(com_argv[3])] = 1;
 
-	nand_markbad(&nand_in);
-	return 1;
+	nand_markbad(&ingenic_dev, nand_idx, block);
+
+	return 0;
 }
 
-int handle_memtest(void)
+static int handle_memtest(size_t argc, char *argv[])
 {
+	unsigned int device_idx;
 	unsigned int start, size;
-	if (com_argc != 2 && com_argc != 4)
+	int err = 0;
+
+	if (argc != 2 && argc != 4)
 	{
 		printf(" Usage: memtest (1) [2] [3]\n"
-		       " 1:device index number\n"
-		       " 2:SDRAM start address\n"
-		       " 3:test size\n");
+			   " 1: device index number\n"
+			   " 2: SDRAM start address\n"
+			   " 3: test size\n");
 		return -1;
 	}
 
-	if (com_argc == 4) {
-		start = strtoul(com_argv[2], NULL, 0);
-		size = strtoul(com_argv[3], NULL, 0);
+	if (argc == 4) {
+	    start = parse_number_print_error(argv[2], &err);
+	    size =  parse_number_print_error(argv[3], &err);
 	} else {
 		start = 0;
 		size = 0;
 	}
-	debug_memory(atoi(com_argv[1]), start, size);
-	return 1;
+	device_idx = parse_number_print_error(argv[1], &err);
+	if (err)
+	    return err;
+
+	debug_memory(&ingenic_dev, device_idx, start, size);
+	return 0;
 }
 
-int handle_gpio(int mode)
+static int handle_load(size_t argc, char *argv[])
 {
-	if (com_argc < 3) {
+	if (argc != 4) {
 		printf(" Usage:"
-		       " gpios (1) (2)\n"
-		       " 1:GPIO pin number\n"
-		       " 2:device index number\n");
-		return -1;
-	}
-
-	debug_gpio(atoi(com_argv[2]), mode, atoi(com_argv[1]));
-	return 1;
-}
-
-int handle_load(void)
-{
-	if (com_argc<4) {
-		printf(" Usage:"
-		       " load (1) (2) (3) \n"
-		       " 1:SDRAM start address\n"
-		       " 2:image file name\n"
-		       " 3:device index number\n");
+			   " load (1) (2) (3) \n"
+			   " 1:SDRAM start address\n"
+			   " 2:image file name\n"
+			   " 3:device index number\n");
 
 		return -1;
 	}
 
-	sdram_in.start=strtoul(com_argv[1], NULL, 0);
+	sdram_in.start=strtoul(argv[1], NULL, 0);
 	printf(" start:::::: 0x%x\n", sdram_in.start);
 
-	sdram_in.dev = atoi(com_argv[3]);
+	sdram_in.dev = atoi(argv[3]);
 	sdram_in.buf = code_buf;
-	sdram_load_file(&sdram_in, com_argv[2]);
-	return 1;
+	sdram_load_file(&ingenic_dev, &sdram_in, argv[2]);
+	return 0;
 }
 
-int command_interpret(char * com_buf)
+static size_t command_parse(char *cmd, char *argv[])
 {
-	char *buf = com_buf;
-	int k, L, i = 0, j = 0;
-	
-	L = (int)strlen(buf);
-	buf[L]=' ';
+	size_t argc = 0;
 
-	if (buf[0] == '\n')
-		return 0;
+	if (cmd == 0 || *cmd == 0)
+	    return 0;
 
-	for (k = 0; k <= L; k++) {
-		if (*buf == ' ' || *buf == '\n') {
-			while ( *(++buf) == ' ' );
-			com_argv[i][j] = '\0';
-			i++;
-			if (i > MAX_ARGC)
-				return COMMAND_NUM + 1;
-			j = 0;
-			continue;
-		} else {
-			com_argv[i][j] = *buf;
-			j++;
-			if (j > MAX_COMMAND_LENGTH)
-				return COMMAND_NUM + 1;
-		}
-		buf++;
+
+	while (isspace(*cmd)) {
+	    ++cmd;
 	}
 
-	com_argc = i;
+	argv[0] = cmd;
+	argc = 1;
 
-	for (i = 1; i <= COMMAND_NUM; i++) 
-		if (!strcmp(COMMAND[i], com_argv[0])) 
-			return i;
-	return COMMAND_NUM + 1;
+	while (*cmd) {
+	    if (isspace(*cmd)) {
+	        *cmd = 0;
+
+	        do {
+	            ++cmd;
+	        } while (isspace(*cmd));
+
+	        if (*cmd == 0 || argc >= MAX_ARGC)
+	            break;
+
+	        argv[argc] = cmd;
+	        ++argc;
+	    }
+
+	    ++cmd;
+	}
+
+	return argc;
 }
+
+static int handle_nand_read(size_t argc, char *argv[])
+{
+	int mode;
+	uint32_t start_page, num_pages;
+	unsigned int device_idx;
+	uint8_t nand_idx;
+	int err = 0;
+
+	if (argc != 5) {
+	    printf("Usage: %s <start page> <length> <device index> "
+	                "<nand chip index>\n", argv[0]);
+	    return -1;
+	}
+
+	if (strcmp(argv[0], "nread") == 0) {
+	    mode = NAND_READ;
+	} else if (strcmp(argv[0], "nreadraw") == 0) {
+	    mode = NAND_READ_RAW;
+	} else if (strcmp(argv[0], "nreadoob") == 0) {
+	    mode = NAND_READ_OOB;
+	} else {
+	    return -1;
+	}
+
+	start_page =  parse_number_print_error(argv[1], &err);
+	num_pages =   parse_number_print_error(argv[2], &err);
+	device_idx =  parse_number_print_error(argv[3], &err);
+	nand_idx =    parse_number_print_error(argv[4], &err);
+	if (err)
+	    return err;
+
+	return nand_read(&ingenic_dev, nand_idx, mode, start_page, num_pages, 0);
+}
+
+static int handle_nand_dump(size_t argc, char *argv[])
+{
+	int mode;
+	uint32_t start_page, num_pages;
+	unsigned int device_idx;
+	uint8_t nand_idx;
+	int err = 0;
+
+	if (argc != 5) {
+	    printf("Usage: %s <start page> <length> <filename> <mode>\n", argv[0]);
+	    return -1;
+	}
+
+	if (strcmp(argv[5], "-n") == 0) {
+	    mode = NAND_READ;
+	} else if (strcmp(argv[5], "-e") == 0) {
+	    mode = NAND_READ_RAW;
+	} else if (strcmp(argv[5], "-o") == 0) {
+	    mode = NAND_READ_OOB;
+	} else {
+	    return -1;
+	}
+
+	start_page =  parse_number_print_error(argv[1], &err);
+	num_pages =   parse_number_print_error(argv[2], &err);
+	device_idx =  parse_number_print_error(argv[3], &err);
+	nand_idx =    parse_number_print_error(argv[4], &err);
+	if (err)
+	    return err;
+
+	return nand_read(&ingenic_dev, nand_idx, mode, start_page, num_pages, 0);
+
+}
+
+static int handle_nand_query(size_t argc, char *argv[])
+{
+	unsigned int device_idx;
+	uint8_t nand_idx;
+	int err = 0;
+
+	if (argc != 3) {
+	    printf("Usage: %s <device index> <nand chip index>\n", argv[0]);
+	    return -1;
+	}
+
+	device_idx =  parse_number_print_error(argv[1], &err);
+	nand_idx =    parse_number_print_error(argv[2], &err);
+	if (err)
+	    return err;
+
+	return nand_query(&ingenic_dev, nand_idx);
+}
+
+static int handle_nand_prog(size_t argc, char *argv[])
+{
+	uint32_t start_page;
+	unsigned int device_idx;
+	uint8_t nand_idx, mode = -1;
+	int err = 0;
+
+	if (argc != 5) {
+		printf("Usage: %s <start page> <filename> <device index> <nand chip index> <mode>\n", argv[0]);
+		return -1;
+	}
+
+	start_page = parse_number_print_error(argv[1], &err);
+	device_idx = parse_number_print_error(argv[3], &err);
+	nand_idx =   parse_number_print_error(argv[4], &err);
+
+	if (argv[5][0] == '-') {
+		switch (argv[5][1]) {
+		case 'e':
+			mode = NO_OOB;
+			break;
+		case 'o':
+			mode = OOB_NO_ECC;
+			break;
+		case 'r':
+			mode = OOB_ECC;
+			break;
+		default:
+			break;
+		}
+	}
+	if (mode == -1) {
+		printf("%s: Invalid mode '%s'\n", argv[0], argv[5]);
+		err = -1;
+	}
+
+	if (err)
+		return err;
+
+
+	nand_prog(&ingenic_dev, nand_idx, start_page, argv[2], mode);
+
+	return 0;
+}
+
+static int handle_mem_read(size_t argc, char *argv[])
+{
+	uint32_t addr;
+	uint32_t val;
+	int err = 0;
+	if (argc != 2)
+	    printf("Usage: %s <addr>\n", argv[0]);
+
+	addr = parse_number_print_error(argv[1], &err);
+	if (err)
+	    return err;
+
+	switch (argv[0][7]) {
+	case '8':
+		val = mem_read8(&ingenic_dev, addr);
+		break;
+	case '1':
+		val = mem_read16(&ingenic_dev, addr);
+		break;
+	default:
+		val = mem_read32(&ingenic_dev, addr);
+		break;
+	}
+
+	printf("0x%x = 0x%x\n", addr, val);
+
+	return 0;
+}
+
+static int handle_mem_write(size_t argc, char *argv[])
+{
+	uint32_t addr;
+	uint32_t val;
+	int err = 0;
+
+	if (argc != 3)
+	    printf("Usage: %s <addr> <value>\n", argv[0]);
+
+	addr = parse_number_print_error(argv[1], &err);
+	val = parse_number_print_error(argv[2], &err);
+	if (err)
+	    return err;
+
+	switch (argv[0][8]) {
+	case '8':
+		mem_write8(&ingenic_dev, addr, val);
+		break;
+	case '1':
+		mem_write16(&ingenic_dev, addr, val);
+		break;
+	default:
+		mem_write32(&ingenic_dev, addr, val);
+		break;
+	}
+
+	printf("0x%x = 0x%x\n", addr, val);
+
+	return 0;
+}
+
+
+static const struct command commands[] = {
+	COMMAND("version",	handle_version),
+	COMMAND("help",		handle_help),
+	COMMAND("nquery",	handle_nand_query),
+	COMMAND("nerase",	handle_nand_erase),
+	COMMAND("nread",	handle_nand_read),
+	COMMAND("nreadraw",	handle_nand_read),
+	COMMAND("nreadoo",	handle_nand_read),
+	COMMAND("nprog",	handle_nand_prog),
+	COMMAND("nwrite",	handle_nand_prog),
+	COMMAND("nmark",	handle_nand_mark),
+	COMMAND("ndump",	handle_nand_dump),
+	COMMAND("exit",		handle_exit),
+	COMMAND("boot",		handle_boot),
+	COMMAND("memread",	handle_mem_read),
+	COMMAND("memwrite",	handle_mem_write),
+	COMMAND("memread16",	handle_mem_read),
+	COMMAND("memwrite16",	handle_mem_write),
+	COMMAND("memread8",	handle_mem_read),
+	COMMAND("memwrite8",	handle_mem_write),
+	COMMAND("memtest",		handle_memtest),
+	COMMAND("load",		handle_load),
+};
 
 int command_handle(char *buf)
 {
-	int cmd = command_interpret(buf); /* get the command index */
+	size_t argc;
+	char *argv[MAX_ARGC];
+	size_t i;
 
-	switch (cmd) {
-	case 0:
-		break;
-	case 6:
-		nand_query();
-		break;
-	case 7:	
-		handle_nerase();
-		break;
-	case 8:	/* nread */
-		nand_read(NAND_READ);
-		break;
-	case 9:	/* nreadraw */
-		nand_read(NAND_READ_RAW);
-		break;
-	case 10: /* nreadoob */
-		nand_read(NAND_READ_OOB);
-		break;
-	case 11:
-		nand_prog();
-		break;
-	case 12:
-		handle_help();
-		break;
-	case 13:
-		handle_version();
-		break;
-	case 14:
-		debug_go();
-		break;
-	case 16:		/* exit */
-		printf(" exiting usbboot software\n");
-		return -1;	/* return -1 to break the main.c while
-				 * then run usb_ingenic_cleanup*/
-		/*case 17:
-		nand_read(NAND_READ_TO_RAM); */
-		break;
-	case 18:
-		handle_gpio(2);
-		break;
-	case 19:
-		handle_gpio(3);
-		break;
-	case 20:
-		boot(STAGE1_FILE_PATH, STAGE2_FILE_PATH);
-		break;
-	case 26:
-		handle_nmark();
-		break;
-	case 28:
-		handle_load();
-		break;
-	case 29:
-		handle_memtest();
-		break;
-	default:
-		printf(" command not support or input error!\n");
-		break;
+	argc = command_parse(buf, argv);
+
+	if (argc == 0)
+	    return 0;
+
+	for (i = 0; i < ARRAY_SIZE(commands); ++i) {
+	    if (strcmp(commands[i].name, argv[0]) == 0)
+	        return commands[i].callback(argc, argv);
 	}
 
-	return 1;
+	printf("Unknow command \"%s\"\n", argv[0]);
+
+	return -1;
 }

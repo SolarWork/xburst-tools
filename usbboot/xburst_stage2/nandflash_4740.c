@@ -219,6 +219,7 @@ u32 nand_read_oob_4740(void *buf, u32 startpage, u32 pagenum)
 static int nand_check_block(u32 block)
 {
 	u32 pg,i;
+
 	if ( bad_block_page >= ppb ) {
 		/* do absolute bad block detect! */
 		pg = block * ppb + 0;
