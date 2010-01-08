@@ -68,7 +68,7 @@ void load_args(void)
 		CFG_CPU_SPEED = 192000000;
 	}
 	PHM_DIV = fw_args->phm_div;
-	if (fw_args->use_uart > 3) 
+	if (fw_args->use_uart > 3)
 		fw_args->use_uart = 0;
 	UART_BASE = UART0_BASE + fw_args->use_uart * 0x1000;
 	CONFIG_BAUDRATE = fw_args->boudrate;
@@ -88,10 +88,12 @@ void c_main(void)
 		do_debug();
 		return ;
 	}
+/*	serial_put_hex(0xf00);*/
 
 	switch (CPU_ID) {
 	case 0x4740:
 		gpio_init_4740();
+/*		serial_put_hex(0xf01);*/
 		pll_init_4740();
 		serial_init();
 		sdram_init_4740();

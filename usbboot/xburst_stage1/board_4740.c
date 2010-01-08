@@ -121,17 +121,27 @@ void sdram_init_4740(void)
 
 	int div[] = {1, 2, 3, 4, 6, 8, 12, 16, 24, 32};
 
+	if (SDRAM_BW16 == 0xff) {
+		serial_puts("hura");
+		return;
+	}
+
+	serial_put_hex(0xf00);
 	cpu_clk = CFG_CPU_SPEED;
 	mem_clk = cpu_clk * div[__cpm_get_cdiv()] / div[__cpm_get_mdiv()];
+	serial_put_hex(0xf01);
 
 	REG_EMC_BCR = 0;	/* Disable bus release */
+	serial_put_hex(0xf02);
 	REG_EMC_RTCSR = 0;	/* Disable clock for counting */
+	serial_put_hex(0xf03);
 
 	/* Fault DMCR value for mode register setting*/
 #define SDRAM_ROW0    11
 #define SDRAM_COL0     8
 #define SDRAM_BANK40   0
 
+	serial_put_hex(0xf04);
 	dmcr0 = ((SDRAM_ROW0-11)<<EMC_DMCR_RA_BIT) |
 		((SDRAM_COL0-8)<<EMC_DMCR_CA_BIT) |
 		(SDRAM_BANK40<<EMC_DMCR_BA_BIT) |
@@ -139,6 +149,7 @@ void sdram_init_4740(void)
 		EMC_DMCR_EPIN |
 		cas_latency_dmcr[((SDRAM_CASL == 3) ? 1 : 0)];
 
+	serial_put_hex(0xf05);
 	/* Basic DMCR value */
 	dmcr = ((SDRAM_ROW-11)<<EMC_DMCR_RA_BIT) |
 		((SDRAM_COL-8)<<EMC_DMCR_CA_BIT) |
@@ -147,6 +158,7 @@ void sdram_init_4740(void)
 		EMC_DMCR_EPIN |
 		cas_latency_dmcr[((SDRAM_CASL == 3) ? 1 : 0)];
 
+	serial_put_hex(0xf06);
 	/* SDRAM timimg */
 	ns = 1000000000 / mem_clk;
 	tmp = SDRAM_TRAS/ns;
@@ -172,23 +184,33 @@ void sdram_init_4740(void)
 		 EMC_SDMR_BL_4 | 
 		 cas_latency_sdmr[((SDRAM_CASL == 3) ? 1 : 0)];
 
+	serial_put_hex(0xf07);
 	/* Stage 1. Precharge all banks by writing SDMR with DMCR.MRSET=0 */
+	serial_put_hex(dmcr);
+	serial_put_hex(REG_EMC_DMCR);
 	REG_EMC_DMCR = dmcr;
 	REG8(EMC_SDMR0|sdmode) = 0;
 
 	/* Wait for precharge, > 200us */
 	tmp = (cpu_clk / 1000000) * 1000;
 	while (tmp--);
+	serial_put_hex(0xf08);
 
 	/* Stage 2. Enable auto-refresh */
 	REG_EMC_DMCR = dmcr | EMC_DMCR_RFSH;
-
+	serial_put_hex(0xf09);
 	tmp = SDRAM_TREF/ns;
+	serial_put_hex(0xf10);
 	tmp = tmp/64 + 1;
+	serial_put_hex(0xf11);
 	if (tmp > 0xff) tmp = 0xff;
-	REG_EMC_RTCOR = tmp;
+	serial_put_hex(tmp);
+/*	REG_EMC_RTCOR = tmp;*/
+	serial_put_hex(0xf10);
 	REG_EMC_RTCNT = 0;
+	serial_put_hex(0xf11);
 	REG_EMC_RTCSR = EMC_RTCSR_CKS_64;	/* Divisor is 64, CKO/64 */
+	serial_put_hex(0xf12);
 
 	/* Wait for number of auto-refresh cycles */
 	tmp = (cpu_clk / 1000000) * 1000;
@@ -198,9 +220,10 @@ void sdram_init_4740(void)
 	REG_EMC_DMCR = dmcr0 | EMC_DMCR_RFSH | EMC_DMCR_MRSET;
 	REG8(EMC_SDMR0|sdmode) = 0;
 
+	serial_put_hex(0xf11);
         /* Set back to basic DMCR value */
 	REG_EMC_DMCR = dmcr | EMC_DMCR_RFSH | EMC_DMCR_MRSET;
-
+	serial_put_hex(0xf12);
 	/* everything is ok now */
 }
 

@@ -21,6 +21,7 @@
 #define __INGENIC_USB_H__
 
 #include <stdint.h>
+#include "usb_boot_defines.h"
 
 #define INGENIC_OUT_ENDPOINT	0x01
 #define INGENIC_IN_ENDPOINT	0x81
@@ -34,7 +35,7 @@
 #define VR_NOR_OPS		0x06
 #define VR_NAND_OPS		0x07
 #define VR_SDRAM_OPS		0x08
-#define VR_CONFIGRATION		0x09
+#define VR_CONFIGURATION	0x09
 #define VR_MEM_OPS		0x0a
 #define VR_GET_NUM		0x0b
 
@@ -56,14 +57,21 @@ struct ingenic_dev {
 	struct usb_device *usb_dev;
 	struct usb_dev_handle *usb_handle;
 	uint8_t interface;
-	char cpu_info_buff[9];
-	char *file_buff;
-	int file_len;
+
+	struct hand config;
+};
+
+enum ingenic_cpu_type {
+    INGENIC_CPU_UNKOWN,
+    INGENIC_CPU_JZ4740V1,
+    INGENIC_CPU_JZ4750V1,
+    INGENIC_CPU_JZ4740,
+    INGENIC_CPU_JZ4750,
 };
 
 int usb_ingenic_init(struct ingenic_dev *ingenic_dev);
 int usb_get_ingenic_cpu(struct ingenic_dev *ingenic_dev);
-int usb_ingenic_upload(struct ingenic_dev *ingenic_dev, int stage);
+int usb_ingenic_upload(struct ingenic_dev *ingenic_dev, int stage, const char *buf, int size);
 void usb_ingenic_cleanup(struct ingenic_dev *ingenic_dev);
 int usb_ingenic_nand_ops(struct ingenic_dev *ingenic_dev, int ops);
 int usb_ingenic_mem_ops(struct ingenic_dev *ingenic_dev, int ops);
@@ -78,6 +86,7 @@ int usb_read_data_from_ingenic(struct ingenic_dev *ingenic_dev, char *buffer,
 int usb_ingenic_start(struct ingenic_dev *ingenic_dev, int rqst, int stage_addr);
 int usb_ingenic_sdram_ops(struct ingenic_dev *ingenic_dev, int ops);
 int usb_ingenic_configration(struct ingenic_dev *ingenic_dev, int ops);
+int usb_ingenic_flush_cache(struct ingenic_dev *ingenic_dev);
 
 #endif	/* __INGENIC_USB_H__ */
 

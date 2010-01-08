@@ -31,76 +31,69 @@
 #include "ingenic_usb.h"
 #include "usb_boot_defines.h"
 
-struct hand hand;
 struct sdram_in sdram_in;
 
 unsigned int total_size;
 static char code_buf[4 * 512 * 1024];
 static char ret[8];
 
-
-static int load_file(struct ingenic_dev *ingenic_dev, const char *file_path)
+static int load_file(struct ingenic_dev *dev, const char *file_path, char *buf)
 {
 	struct stat fstat;
-	int fd, status, res = -1;
+	int fd, status;
 
 	status = stat(file_path, &fstat);
 
 	if (status < 0) {
 		fprintf(stderr, "Error - can't get file size from '%s': %s\n",
 			file_path, strerror(errno));
-		goto out;
+		return errno;
 	}
-
-	ingenic_dev->file_len = fstat.st_size;
-	ingenic_dev->file_buff = code_buf;
 
 	fd = open(file_path, O_RDONLY);
 
 	if (fd < 0) {
-		fprintf(stderr, "Error - can't open file '%s': %s\n", 
+		fprintf(stderr, "Error - can't open file '%s': %s\n",
 			file_path, strerror(errno));
-		goto out;
+		return errno;
 	}
 
-	status = read(fd, ingenic_dev->file_buff, ingenic_dev->file_len);
+	status = read(fd, buf, fstat.st_size);
 
-	if (status < (int)ingenic_dev->file_len) {
-		fprintf(stderr, "Error - can't read file '%s': %s\n", 
+	if (status < (int)fstat.st_size) {
+		fprintf(stderr, "Error - can't read file '%s': %s\n",
 			file_path, strerror(errno));
 		goto close;
 	}
 
 	/* write args to code */
-	memcpy(ingenic_dev->file_buff + 8, &hand.fw_args, 
-	       sizeof(struct fw_args));
-
-	res = 1;
+	memcpy(buf + 8, &dev->config.fw_args, sizeof(struct fw_args));
 
 close:
 	close(fd);
-out:
-	return res;
+
+	return fstat.st_size;
 }
 
 /* after upload stage2. must init device */
 void init_cfg(struct ingenic_dev *dev)
 {
 	if (usb_get_ingenic_cpu(dev) < 3) {
-		printf(" XBurst CPU not booted yet, boot it first!\n");
+		printf("XBurst CPU not booted yet, boot it first!\n");
 		return;
 	}
 
-	if (usb_send_data_to_ingenic(dev, (char*)&hand, sizeof(hand)) != 1)
+	if (usb_send_data_to_ingenic(dev, (char*)&dev->config, sizeof(dev->config))
+	< 0)
 		goto xout;
 
-	if (usb_ingenic_configration(dev, DS_hand) != 1)
+	if (usb_ingenic_configration(dev, DS_hand) < 0)
 		goto xout;
 
-	if (usb_read_data_from_ingenic(dev, ret, 8) != 1)
+	if (usb_read_data_from_ingenic(dev, ret, 8) < 0)
 		goto xout;
 
-	printf(" Configuring XBurst CPU succeeded.\n");
+	printf("Configuring XBurst CPU succeeded.\n");
 	return;
 xout:
 	printf("Configuring XBurst CPU failed.\n");
@@ -109,57 +102,62 @@ xout:
 int boot(struct ingenic_dev *dev, const char *stage1_path, const char *stage2_path)
 {
 	int status;
+	int size;
 
 	status = usb_get_ingenic_cpu(dev);
 	switch (status)	{
-	case 1:            /* Jz4740v1 */
+	case INGENIC_CPU_JZ4740V1:
 		status = 0;
-		hand.fw_args.cpu_id = 0x4740;
+		dev->config.fw_args.cpu_id = 0x4740;
 		break;
-	case 2:            /* Jz4750v1 */
+	case INGENIC_CPU_JZ4750V1:
 		status = 0;
-		hand.fw_args.cpu_id = 0x4750;
+		dev->config.fw_args.cpu_id = 0x4750;
 		break;
-	case 3:            /* Boot4740 */
+	case INGENIC_CPU_JZ4740:
 		status = 1;
-		hand.fw_args.cpu_id = 0x4740;
+		dev->config.fw_args.cpu_id = 0x4740;
 		break;
-	case 4:            /* Boot4750 */
+	case INGENIC_CPU_JZ4750:
 		status = 1;
-		hand.fw_args.cpu_id = 0x4750;
+		dev->config.fw_args.cpu_id = 0x4750;
 		break;
 	default:
-		return 1;
+		return (status < 0) ? status : -1;
 	}
 
 	if (status) {
-		printf(" Already booted.\n");
-		return 1;
+		printf("Already booted.\n");
+		return 0;
 	} else {
-		printf(" CPU not yet booted, now booting...\n");
+		printf("CPU not yet booted, now booting...\n");
 
 		/* now we upload the boot stage1 */
-		printf(" Loading stage1 from '%s'\n", stage1_path);
-		if (load_file(dev, stage1_path) < 1)
-			return -1;
+		printf("Loading stage1 from '%s'\n", stage1_path);
+		size = load_file(dev, stage1_path, code_buf);
+		if (size < 0)
+			return size;
 
-		if (usb_ingenic_upload(dev, 1) < 1)
+		if (usb_ingenic_upload(dev, 1, code_buf, size) < 0)
 			return -1;
 
 		/* now we upload the boot stage2 */
 		usleep(100);
-		printf(" Loading stage2 from '%s'\n", stage2_path);
-		if (load_file(dev, stage2_path) < 1)
+		printf("Loading stage2 from '%s'\n", stage2_path);
+		size = load_file(dev, stage2_path, code_buf);
+		if (size < 0) {
+			printf("FOOBAR");
+			return size;
+		}
+
+		if (usb_ingenic_upload(dev, 2, code_buf, size) < 0)
 			return -1;
 
-		if (usb_ingenic_upload(dev, 2) < 1)
-			return -1;
-
-		printf(" Booted successfully!\n");
+		printf("Booted successfully!\n");
 	}
 	usleep(100);
 	init_cfg(dev);
-	return 1;
+	return 0;
 }
 
 
@@ -171,51 +169,50 @@ int debug_memory(struct ingenic_dev *dev, int obj, unsigned int start, unsigned 
 
 	tmp = usb_get_ingenic_cpu(dev);
 	if (tmp  > 2) {
-		printf(" This command only run under UNBOOT state!\n");
+		printf("This command only run under UNBOOT state!\n");
 		return -1;
 	}
 
 	switch (tmp) {
 	case 1:
-		tmp = 0;
-		hand.fw_args.cpu_id = 0x4740;
+		dev->config.fw_args.cpu_id = 0x4740;
 		break;
 	case 2:
-		tmp = 0;
-		hand.fw_args.cpu_id = 0x4750;
+		dev->config.fw_args.cpu_id = 0x4750;
 		break;
 	}
 
-	hand.fw_args.debug_ops = 1;/* tell device it's memory debug */
-	hand.fw_args.start = start;
+	dev->config.fw_args.debug_ops = 1;/* tell device it's memory debug */
+	dev->config.fw_args.start = start;
 
 	if (size == 0)
-		hand.fw_args.size = total_size;
+		dev->config.fw_args.size = total_size;
 	else
-		hand.fw_args.size = size;
+		dev->config.fw_args.size = size;
 
-	printf(" Now test memory from 0x%x to 0x%x: \n",
-	       start, start + hand.fw_args.size);
+	printf("Now test memory from 0x%x to 0x%x: \n",
+	       start, start + dev->config.fw_args.size);
 
-	if (load_file(dev, STAGE1_FILE_PATH) < 1)
-		return -1;
-	if (usb_ingenic_upload(dev, 1) < 1)
+	size = load_file(dev, STAGE1_FILE_PATH, code_buf);
+	if (size < 0)
+		return size;
+	if (usb_ingenic_upload(dev, 1, code_buf, size) < 1)
 		return -1;
 
 	usleep(100);
 	usb_read_data_from_ingenic(dev, buffer, 8);
 	if (buffer[0] != 0)
-		printf(" Test memory fail! Last error address is 0x%x !\n",
+		printf("Test memory fail! Last error address is 0x%x !\n",
 		       buffer[0]);
 	else
-		printf(" Test memory pass!\n");
+		printf("Test memory pass!\n");
 
 	return 1;
 }
 
 int debug_go(struct ingenic_dev *dev, size_t argc, char *argv[])
 {
-	unsigned int addr,obj;
+	unsigned int addr, obj;
 	if (argc < 3) {
 		printf(" Usage: go (1) (2) \n"
 		       " 1:start SDRAM address\n"
@@ -226,7 +223,7 @@ int debug_go(struct ingenic_dev *dev, size_t argc, char *argv[])
 	addr = strtoul(argv[1], NULL, 0);
 	obj = atoi(argv[2]);
 
-	printf(" Executing No.%d device at address 0x%x\n", obj, addr);
+	printf("Executing No.%d device at address 0x%x\n", obj, addr);
 
 	if (usb_ingenic_start(dev, VR_PROGRAM_START2, addr) < 1)
 		return -1;
@@ -237,12 +234,12 @@ int debug_go(struct ingenic_dev *dev, size_t argc, char *argv[])
 int sdram_load(struct ingenic_dev *dev, struct sdram_in *sdram_in)
 {
 	if (usb_get_ingenic_cpu(dev) < 3) {
-		printf(" Device unboot! Boot it first!\n");
+		printf("Device unboot! Boot it first!\n");
 		return -1;
 	}
 
 	if (sdram_in->length > (unsigned int) MAX_LOAD_SIZE) {
-		printf(" Image length too long!\n");
+		printf("Image length too long!\n");
 		return -1;
 	}
 
@@ -252,7 +249,7 @@ int sdram_load(struct ingenic_dev *dev, struct sdram_in *sdram_in)
 /*	usb_ingenic_sdram_ops(dev, sdram_in);*/
 
 	usb_read_data_from_ingenic(dev, ret, 8);
-	printf(" Load last address at 0x%x\n",
+	printf("Load last address at 0x%x\n",
 	       ((ret[3]<<24)|(ret[2]<<16)|(ret[1]<<8)|(ret[0]<<0)));
 
 	return 1;
@@ -283,8 +280,8 @@ int sdram_load_file(struct ingenic_dev *dev, struct sdram_in *sdram_in, char *fi
 	j = flen % MAX_LOAD_SIZE;
 	offset = 0;
 
-	printf(" Total size to send in byte is :%d\n", flen);
-	printf(" Loading data to SDRAM :\n");
+	printf("Total size to send in byte is :%d\n", flen);
+	printf("Loading data to SDRAM :\n");
 
 	for (k = 0; k < m; k++) {
 		status = read(fd, sdram_in->buf, MAX_LOAD_SIZE);

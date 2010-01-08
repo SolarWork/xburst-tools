@@ -20,6 +20,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <fcntl.h>
+#include <unistd.h>
+
 #include "usb_boot_defines.h"
 #include "ingenic_usb.h"
 #include "cmd.h"
@@ -323,6 +326,11 @@ static size_t command_parse(char *cmd, char *argv[])
 	return argc;
 }
 
+static int nand_read_callback(void *data, const char *buf, size_t size)
+{
+	return 0;
+}
+
 static int handle_nand_read(size_t argc, char *argv[])
 {
 	int mode;
@@ -354,27 +362,37 @@ static int handle_nand_read(size_t argc, char *argv[])
 	if (err)
 	    return err;
 
-	return nand_read(&ingenic_dev, nand_idx, mode, start_page, num_pages, 0);
+	return nand_read(&ingenic_dev, nand_idx, mode, start_page, num_pages, 0,
+					nand_read_callback, NULL);
+}
+
+static int nand_dump_callback(void *data, const char *buf, size_t size)
+{
+	int fd = *(int*)(data);
+
+	write(fd, buf, size);
+
+	return 0;
 }
 
 static int handle_nand_dump(size_t argc, char *argv[])
 {
 	int mode;
 	uint32_t start_page, num_pages;
-	unsigned int device_idx;
 	uint8_t nand_idx;
 	int err = 0;
+	int fd;
 
 	if (argc != 5) {
 	    printf("Usage: %s <start page> <length> <filename> <mode>\n", argv[0]);
 	    return -1;
 	}
 
-	if (strcmp(argv[5], "-n") == 0) {
+	if (strcmp(argv[4], "-n") == 0) {
 	    mode = NAND_READ;
-	} else if (strcmp(argv[5], "-e") == 0) {
+	} else if (strcmp(argv[4], "-e") == 0) {
 	    mode = NAND_READ_RAW;
-	} else if (strcmp(argv[5], "-o") == 0) {
+	} else if (strcmp(argv[4], "-o") == 0) {
 	    mode = NAND_READ_OOB;
 	} else {
 	    return -1;
@@ -382,13 +400,19 @@ static int handle_nand_dump(size_t argc, char *argv[])
 
 	start_page =  parse_number_print_error(argv[1], &err);
 	num_pages =   parse_number_print_error(argv[2], &err);
-	device_idx =  parse_number_print_error(argv[3], &err);
-	nand_idx =    parse_number_print_error(argv[4], &err);
+/*	device_idx =  parse_number_print_error(argv[3], &err);*/
+	nand_idx =    0;
 	if (err)
 	    return err;
 
-	return nand_read(&ingenic_dev, nand_idx, mode, start_page, num_pages, 0);
+	fd = creat(argv[3], 0644);
 
+	err = nand_read(&ingenic_dev, nand_idx, mode, start_page, num_pages, 0,
+	                nand_dump_callback, &fd);
+
+	close(fd);
+
+	return err;
 }
 
 static int handle_nand_query(size_t argc, char *argv[])
@@ -417,7 +441,7 @@ static int handle_nand_prog(size_t argc, char *argv[])
 	uint8_t nand_idx, mode = -1;
 	int err = 0;
 
-	if (argc != 5) {
+	if (argc != 6) {
 		printf("Usage: %s <start page> <filename> <device index> <nand chip index> <mode>\n", argv[0]);
 		return -1;
 	}

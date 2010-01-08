@@ -22,7 +22,7 @@
 #ifndef __USB_BOOT_H__
 #define __USB_BOOT_H__
 
-#define BULK_BUF_SIZE (128 * 4096)
+#define BULK_BUF_SIZE (128 * (4096 + 128))
 
 enum UDC_STATE
 {

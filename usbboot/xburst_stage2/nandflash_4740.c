@@ -440,6 +440,8 @@ u32 nand_read_4740(void *buf, u32 startpage, u32 pagecount, int option)
 	tmpbuf = buf;
 	handshake_PKT[3] = 0;
 
+	return cur_page + pagecount;
+
 	while (cnt < pagecount) {
 		select_chip(cnt / ppb);
 		/* If this is the first page of the block, check for bad. */

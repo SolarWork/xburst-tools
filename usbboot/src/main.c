@@ -29,7 +29,6 @@
 #define CONFIG_FILE_PATH "/etc/xburst-tools/usbboot.cfg"
 
 struct ingenic_dev ingenic_dev;
-extern struct hand hand;
 
 static void help(void)
 {
@@ -98,11 +97,15 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}*/
 
-	if (usb_ingenic_init(&ingenic_dev) < 1)
+	if (usb_ingenic_init(&ingenic_dev)) {
+		printf("A\n");
 	 	return EXIT_FAILURE;
+	}
 
-	if (parse_configure(&hand, cfgpath) < 1)
+	if (parse_configure(&ingenic_dev.config, cfgpath)) {
+		printf("B\n");
 		return EXIT_FAILURE;
+	}
 
 	if (cmdpt) {		/* direct run command */
 		char *delim=";";

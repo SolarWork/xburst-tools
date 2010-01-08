@@ -213,5 +213,5 @@ int parse_configure(struct hand *hand, char * file_path)
 	if (check_dump_cfg(hand) < 1)
 		return -1;
 
-	return 1;
+	return 0;
 }
