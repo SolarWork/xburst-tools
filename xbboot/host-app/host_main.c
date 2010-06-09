@@ -87,7 +87,6 @@ int main(int argc, char** argv)
 
 			xburst_h = open_xburst_device();
 			if (xburst_h) {
-				printf("\nInfo - found XBurst boot device.\n");
 				if (send_request(xburst_h, "set_addr", STAGE1_ADDRESS)) {
 					close_xburst_device(xburst_h);
 					continue;
@@ -166,15 +165,15 @@ struct usb_dev_handle* open_xburst_device()
 			for (usb_bus = usb_get_busses(); usb_bus != 0; usb_bus = usb_bus->next) {
 				for (usb_dev = usb_bus->devices; usb_dev != 0; usb_dev = usb_dev->next) {
 					if (usb_dev->descriptor.idVendor == INGENIC_VENDOR_ID) {
-						if ( usb_dev->descriptor.idProduct == INGENIC_XBURST_JZ4740 || 
-						     usb_dev->descriptor.idProduct == INGENIC_XBURST_JZ4760) {
+						if (usb_dev->descriptor.idProduct == INGENIC_XBURST_JZ4740 || 
+						    usb_dev->descriptor.idProduct == INGENIC_XBURST_JZ4760) {
 							if (xburst_dev) {
 								fprintf(stderr, "Error - more than one XBurst boot device found.\n");
 								goto xout;
 							}
+							xburst_dev = usb_dev;
+							// keep searching to make sure there is only 1 XBurst device
 						}
-						xburst_dev = usb_dev;
-						// keep searching to make sure there is only 1 XBurst device
 					}
 				}
 			}
@@ -228,6 +227,7 @@ struct usb_dev_handle* open_xburst_device()
 		goto xout_xburst_h;
 	}
 
+	printf("\nInfo - found XBurst CPU: JZ%x device\n", xburst_dev->descriptor.idProduct);
 	return xburst_h;
 
 xout_xburst_h:
