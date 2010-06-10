@@ -13,6 +13,8 @@ void gpio_init_4740()
 {
 	__gpio_as_nand();
 	__gpio_as_sdram_32bit();
+        /* enable the TP4, TP5 as UART0 */
+        REG_GPIO_PXSELS(2) = 0x80000000;
 	__gpio_as_uart0();
 	__gpio_as_lcd_18bit();
 	__gpio_as_msc();

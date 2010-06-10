@@ -21,10 +21,10 @@ extern void pll_init_4760();
 extern void cpm_start_all_4760();
 extern void serial_init_4760(int uart);
 extern void sdram_init_4760();
+extern void nand_init_4760();
 
 void load_args_4740()
 {
-	ARG_CPU_ID = 0x4740;
 	ARG_EXTAL = 12 * 1000000;
 	ARG_CPU_SPEED = 21 * ARG_EXTAL;
 	ARG_PHM_DIV = 3;
@@ -37,7 +37,6 @@ void load_args_4740()
 
 void load_args_4760()
 {
-	ARG_CPU_ID = 0x4760;
 	ARG_EXTAL = 12 * 1000000;
 	ARG_CPU_SPEED = 12 * ARG_EXTAL;
 	ARG_PHM_DIV = 3;
@@ -51,28 +50,33 @@ void load_args_4760()
 
 void c_main(void)
 {
-	load_args_4740();
+	ARG_CPU_ID = * (int *)0x80002008;
 
 	switch (ARG_CPU_ID)	{
 	case 0x4740:
+		load_args_4740();
 		gpio_init_4740();
 		serial_init_4740(0);
 		pll_init_4740();
 		sdram_init_4740();
 		nand_init_4740();
+		serial_puts("Ben NanoNote\n");
 		break;
 	case 0x4760:	
+		load_args_4760();
 		gpio_init_4760();
 		cpm_start_all_4760();
 		serial_init_4760(1);
 		pll_init_4760();
 		sdram_init_4760();
+		nand_init_4760();
+		serial_puts("JZ4760 EVB lepus\n");
 		break;
 	default:
 		return;
 	}
 
-	serial_puts("stage 1 finished: GPIO, clocks, SDRAM, UART setup\n"
+	serial_puts("GPIO, clocks, SDRAM, UART setup\n"
 		    "now jump back to BOOT ROM...\n");
 
 	if (ARG_CPU_ID ==  0x4760) {

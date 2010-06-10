@@ -10,6 +10,11 @@
 #include "jz4760.h"
 #include "board-jz4760.h"
 
+void nand_init_4760()
+{
+	REG_NEMC_NFCSR |= NEMC_NFCSR_NFE1 | NEMC_NFCSR_NFCE1;
+}
+
 void cpm_start_all_4760()
 {
 	__cpm_start_all();
@@ -46,7 +51,7 @@ void gpio_init_4760()
 		while(i--);
 	}
 #endif
-	__gpio_as_nand_8bit(1);
+	__gpio_as_nand_16bit(1);
 }
 
 #define MHZ (1000 * 1000)
@@ -529,11 +534,9 @@ for(times = 0; times < banks; times++) {
 	REG_DMAC_DCCSR(0) &= ~DMAC_DCCSR_EN;  /* disable DMA */
 
 	if(err == 0) {
-//		serial_puts("pass\n");
+		serial_puts("passed:");
 	        serial_put_hex(times);
-	}
-	else {
-//		serial_puts("failed\n");
+	} else {
 	        serial_put_hex(times);
 	}
 
@@ -563,12 +566,10 @@ void ddr_mem_init(int msel, int hl, int tsel, int arg)
 	cpu_clk = ARG_CPU_SPEED;
 
 #if defined(CONFIG_SDRAM_DDR2) // ddr2
-	serial_puts("\nddr2-\n");
 	ddrc_cfg_reg = DDRC_CFG_TYPE_DDR2 | (DDR_ROW-12)<<10
 		| (DDR_COL-8)<<8 | DDR_CS1EN<<7 | DDR_CS0EN<<6
 		| ((DDR_CL-1) | 0x8)<<2 | DDR_BANK8<<1 | DDR_DW32;
 #elif defined(CONFIG_SDRAM_DDR1) // ddr1
-	serial_puts("\nddr1-\n");
 	ddrc_cfg_reg = DDRC_CFG_BTRUN |DDRC_CFG_TYPE_DDR1
 		| (DDR_ROW-12)<<10 | (DDR_COL-8)<<8 | DDR_CS1EN<<7 | DDR_CS0EN<<6
 		| ((DDR_CL_HALF?(DDR_CL&~0x8):((DDR_CL-1)|0x8))<<2)
@@ -981,7 +982,7 @@ void sdram_init_4760(void)
 #define MAX_DELAY_VALUES 16 /* quars (2) * hls (2) * msels (4) */
 	int j, index, quar;
 	int mem_index[MAX_DELAY_VALUES];
-#if 1 // probe
+#if 0 // probe
 	jzmemset(mem_index, 0, MAX_DELAY_VALUES);
 	for (i = 1; i < MAX_TSEL_VALUE; i ++) {
 		tsel = i;
@@ -1041,7 +1042,6 @@ void sdram_init_4760(void)
 
 			{
 				int result = 0;
-				serial_puts("ddr test:");
 				result = ddr_dma_test(0);
 				if(result != 0)
 					serial_puts("FAIL!\n");
@@ -1140,7 +1140,6 @@ void sdram_init_4760(void)
 	/* Wait for number of auto-refresh cycles */
 	tmp_cnt = (cpu_clk / 1000000) * 10;
 	while (tmp_cnt--);
-	ddr_dma_test(0);
 	if(testall)
 		testallmem();
 }

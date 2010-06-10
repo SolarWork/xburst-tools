@@ -46,6 +46,8 @@
 #define STAGE1_ADDRESS		("0x80002000")
 
 uint8_t xburst_interface = 0;
+uint8_t option_upload = 0;
+uint16_t xburst_cpu = INGENIC_XBURST_JZ4760;
 
 struct usb_dev_handle* open_xburst_device();
 void close_xburst_device(struct usb_dev_handle* xburst_h);
@@ -78,6 +80,7 @@ int main(int argc, char** argv)
 			goto xquit;
 		}
 
+		option_upload = 1;
 		struct timespec timx,tim1;
 
 		tim1.tv_sec = 1;
@@ -173,6 +176,7 @@ struct usb_dev_handle* open_xburst_device()
 								goto xout;
 							}
 							xburst_dev = usb_dev;
+							xburst_cpu = usb_dev->descriptor.idProduct;
 							// keep searching to make sure there is only 1 XBurst device
 						}
 					}
@@ -394,6 +398,12 @@ int send_request(struct usb_dev_handle* xburst_h, char* request, char* str_param
 				fprintf(stderr, "Error reading %d bytes (got %d).\n", file_len, num_read);
 				free(file_data);
 				goto xout_xburst_interface;
+			}
+			{
+				if(option_upload) {
+					memcpy(file_data + 8, &xburst_cpu, sizeof(unsigned int));
+					option_upload = 0;
+				}
 			}
 			usb_status = usb_bulk_write(xburst_h,
 				/* endpoint */	INGENIC_OUT_ENDPOINT,

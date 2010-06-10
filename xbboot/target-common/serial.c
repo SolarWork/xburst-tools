@@ -7,8 +7,8 @@
 // 3 of the License, or (at your option) any later version.
 //
 
-#include "serial.h"
 #include "jz4740.h"
+#include "serial.h"
 
 void serial_putc(char c)
 {
