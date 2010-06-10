@@ -67,11 +67,6 @@ void c_main(void)
 		serial_init_4760(1);
 		pll_init_4760();
 		sdram_init_4760();
-		__asm__ (
-		"li  $31, 0xbfc012e0 \n\t"
-		"jr  $31 \n\t "
-		);
-
 		break;
 	default:
 		return;
@@ -80,5 +75,11 @@ void c_main(void)
 	serial_puts("stage 1 finished: GPIO, clocks, SDRAM, UART setup\n"
 		    "now jump back to BOOT ROM...\n");
 
+	if (ARG_CPU_ID ==  0x4740) {
+		__asm__ (
+		"li  $31, 0xbfc012e0 \n\t"
+		"jr  $31 \n\t "
+		);
+	}
 }
 

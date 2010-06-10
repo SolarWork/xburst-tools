@@ -10,9 +10,10 @@
 //#define CONFIG_FPGA
 //#define CFG_DIV	2	/* for FPGA */
 
+#define CONFIG_DDRC
+#define CONFIG_SDRAM_DDR2
 //#define CONFIG_SDRAM_MDDR
 //#define CONFIG_SDRAM_DDR1
-//#define CONFIG_SDRAM_DDR2
 //#define CONFIG_MOBILE_SDRAM
 
 #if (!defined(CONFIG_SDRAM_MDDR) && !defined(CONFIG_SDRAM_DDR1) && !defined(CONFIG_SDRAM_DDR2))
