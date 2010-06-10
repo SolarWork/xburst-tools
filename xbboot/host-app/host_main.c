@@ -87,6 +87,7 @@ int main(int argc, char** argv)
 
 			xburst_h = open_xburst_device();
 			if (xburst_h) {
+				printf("\nInfo - found XBurst boot device.\n");
 				if (send_request(xburst_h, "set_addr", STAGE1_ADDRESS)) {
 					close_xburst_device(xburst_h);
 					continue;
@@ -227,7 +228,6 @@ struct usb_dev_handle* open_xburst_device()
 		goto xout_xburst_h;
 	}
 
-	printf("\nInfo - found XBurst CPU: JZ%x device\n", xburst_dev->descriptor.idProduct);
 	return xburst_h;
 
 xout_xburst_h:
