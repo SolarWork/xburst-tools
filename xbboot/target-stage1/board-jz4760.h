@@ -22,8 +22,6 @@
  */
 #define CONFIG_NR_DRAM_BANKS	1  /* SDRAM BANK Number: 1, 2*/
 
-#define CONFIG_MOBILE_SDRAM	1	/* use mobile sdram */
-
 #ifndef CONFIG_MOBILE_SDRAM
 // SDRAM paramters
 #define SDRAM_BW16		0	/* Data bus width: 0-32bit, 1-16bit */
