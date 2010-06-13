@@ -122,14 +122,13 @@ void pll_init_4760()
 		0, 0, 1, 2, 3, 0, 4, 0, 5
 	};
 
-     /** divisors, 
+	/** divisors, 
 	 *  for jz4760 ,I:H:H2:P:M:S.
-	 *  DIV should be one of [1, 2, 3, 4, 6, 8]
-     */
-//	int div[6] = {1, 2, 4, 4, 4, 4};
-//	int div[6] = {1, 3, 6, 6, 6, 6};
-	int div[6] = {1, 2, 2, 2, 2, 2};
-	int pllout2;
+	 *  DIV should be one of [1, 2, 3, 4, 6, 8] like:
+	 *  div[6] = {1, 2, 2, 2, 2, 2};
+	 *  div[6] = {1, 3, 6, 6, 6, 6};
+	 */
+	int div[6] = {1, 2, 4, 4, 4, 4};
 
 	cfcr = 	CPM_CPCCR_PCS |
 		(n2FR[div[0]] << CPM_CPCCR_CDIV_BIT) | 
@@ -152,11 +151,9 @@ void pll_init_4760()
 #endif
 	cfcr |= CPM_CPCCR_CE;
 
-	pllout2 = (cfcr & CPM_CPCCR_PCS) ? ARG_CPU_SPEED : (ARG_CPU_SPEED / 2);
-
 	plcr1 = pll_calc_m_n_od(ARG_CPU_SPEED, ARG_EXTAL);
 	plcr1 |= (0x20 << CPM_CPPCR_PLLST_BIT)	/* PLL stable time */
-		 | CPM_CPPCR_PLLEN;             /* enable PLL */
+		| CPM_CPPCR_PLLEN;             /* enable PLL */
 
 	/* init PLL */
 	REG_CPM_CPCCR = cfcr;

@@ -43,8 +43,8 @@ void load_args_4760()
 	ARG_UART_BAUD = 57600;
 	ARG_BUS_WIDTH_16 = * (int *)0x80002014;
 	ARG_BANK_ADDR_2BIT = 4;
-	ARG_ROW_ADDR = 12;
-	ARG_COL_ADDR = 9;
+	ARG_ROW_ADDR = 13;
+	ARG_COL_ADDR = 10;
 }
 
 
