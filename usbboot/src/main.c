@@ -1,6 +1,6 @@
 /*
  * Copyright(C) 2009  Qi Hardware Inc.,
- * Authors: Xiangfu Liu <xiangfu@qi-hardware.com>
+ * Authors: Xiangfu Liu <xiangfu@sharism.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,9 +37,10 @@ static void help(void)
 	       "  -h --help\t\t\tPrint this help message\n"
 	       "  -v --version\t\t\tPrint the version number\n"
 	       "  -c --command\t\t\tDirect run the commands, split by ';'\n"
-	       "  -f --configure\t\t\tconfigure file path\n"
+	       "              \t\t\tNOTICE: the max commands count is 10!\n"
+	       "  -f --configure\t\tconfigure file path\n"
 	       "  <run without options to enter commands via usbboot prompt>\n\n"
-	       "Report bugs to <xiangfu@qi-hardware.com>.\n"
+	       "Report bugs to <xiangfu@sharism.cc>.\n"
 		);
 }
 
@@ -107,17 +108,14 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 
 	if (command) {		/* direct run command */
-		char *delim=";";
-		char *p;
-		p = strtok(cmdpt, delim);
-		strcpy(com_buf, p);
-		printf(" Execute command: %s \n",com_buf);
-		command_handle(com_buf);
+		char *p[10];
+		int i, loop = 0;
+		p[loop++] = strtok(cmdpt, ";");
+		while(p[loop++] = strtok(NULL, ";"));
 
-		while((p = strtok(NULL,delim))) {
-			strcpy(com_buf, p);
-			printf(" Execute command: %s \n",com_buf);
-			command_handle(com_buf);
+		for(i = 0; i < loop - 1 && i < 10; i++) {
+			printf(" Execute command: %s \n",p[i]);
+			command_handle(p[i]);
 		}
 		goto out;
 	}

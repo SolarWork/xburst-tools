@@ -223,39 +223,22 @@ int handle_load(void)
 
 int command_interpret(char * com_buf)
 {
-	char *buf = com_buf;
-	int k, L, i = 0, j = 0;
-	
-	L = (int)strlen(buf);
-	buf[L]=' ';
-
-	if (buf[0] == '\n')
+	if(com_buf[0] == '\n')
 		return 0;
 
-	for (k = 0; k <= L; k++) {
-		if (*buf == ' ' || *buf == '\n') {
-			while ( *(++buf) == ' ' );
-			com_argv[i][j] = '\0';
-			i++;
-			if (i > MAX_ARGC)
-				return COMMAND_NUM + 1;
-			j = 0;
-			continue;
-		} else {
-			com_argv[i][j] = *buf;
-			j++;
-			if (j > MAX_COMMAND_LENGTH)
-				return COMMAND_NUM + 1;
-		}
-		buf++;
-	}
+	com_argc = 0;
+	char *p = strtok(com_buf, "\n ");
+	strcpy(com_argv[com_argc++], p);
 
-	com_argc = i;
+	while(p = strtok(NULL, "\n "))
+		strcpy(com_argv[com_argc++], p);
 
-	for (i = 1; i <= COMMAND_NUM; i++) 
-		if (!strcmp(COMMAND[i], com_argv[0])) 
-			return i;
-	return COMMAND_NUM + 1;
+	int loop = 0;
+	for (loop = 1; loop <= COMMAND_NUM; loop++)
+		if (!strcmp(COMMAND[loop], com_argv[0]))
+			return loop;
+
+	return -1;
 }
 
 int command_handle(char *buf)
@@ -317,6 +300,7 @@ int command_handle(char *buf)
 	case 29:
 		handle_memtest();
 		break;
+	case -1:
 	default:
 		printf(" command not support or input error!\n");
 		break;

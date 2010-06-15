@@ -568,7 +568,7 @@ int nand_prog(void)
 		" \t-e:\twith oob and ecc\n";
 
 	if (com_argc != 6) {
-		printf(" not enough argument.\n");
+		printf(" arguments count error.\n");
 		printf("%s", help);
 		return 0;
 	}
@@ -578,6 +578,7 @@ int nand_prog(void)
 	nand_in.start = atoi(com_argv[1]);
 	image_file = com_argv[2];
 	nand_in.dev = atoi(com_argv[3]);
+
 	(nand_in.cs_map)[atoi(com_argv[4])] = 1;
 	if (!strcmp(com_argv[5], "-e")) 
 		nand_in.option = OOB_ECC;
