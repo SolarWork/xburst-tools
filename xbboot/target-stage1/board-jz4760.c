@@ -138,7 +138,7 @@ void pll_init_4760()
 		(n2FR[div[4]] << CPM_CPCCR_MDIV_BIT) |
 		(n2FR[div[5]] << CPM_CPCCR_SDIV_BIT);
 
-	if (ARG_EXTAL > 16000000)
+	if (CFG_EXTAL > 16000000)
 		cfcr |= CPM_CPCCR_ECS;
 	else
 		cfcr &= ~CPM_CPCCR_ECS;
@@ -151,7 +151,7 @@ void pll_init_4760()
 #endif
 	cfcr |= CPM_CPCCR_CE;
 
-	plcr1 = pll_calc_m_n_od(ARG_CPU_SPEED, ARG_EXTAL);
+	plcr1 = pll_calc_m_n_od(CFG_CPU_SPEED, CFG_EXTAL);
 	plcr1 |= (0x20 << CPM_CPPCR_PLLST_BIT)	/* PLL stable time */
 		| CPM_CPPCR_PLLEN;             /* enable PLL */
 
@@ -338,7 +338,7 @@ static int dma_memcpy_test(int channle_0, int channle_1) {
 	int channel;
 
 #ifndef CONFIG_DDRC
-	banks = (ARG_BANK_ADDR_2BIT ? 4 : 2) *(CONFIG_NR_DRAM_BANKS);
+	banks = (SDRAM_BANK4 ? 4 : 2) *(CONFIG_NR_DRAM_BANKS);
 #else
 	banks = (DDR_BANK8 ? 8 : 4) *(DDR_CS0EN + DDR_CS1EN);
 #endif
@@ -352,7 +352,7 @@ static int dma_memcpy_test(int channle_0, int channle_1) {
 	DDR_DMA1_SRC = DDR_DMA_BASE + banksize*(banks - 1) + testsize*2;
 	DDR_DMA1_DST = DDR_DMA_BASE + banksize*(banks - 1) + testsize*3;
 
-	cpu_clk = ARG_CPU_SPEED;
+	cpu_clk = CFG_CPU_SPEED;
 
 //    for(channel = 0; channel < MAX_DMA_NUM; channel++) {
 
@@ -465,7 +465,7 @@ static int ddr_dma_test(int print_flag) {
 	REG_DMAC_DMADCKE(1) = 0x3f;
 
 #ifndef CONFIG_DDRC
-	banks = (ARG_BANK_ADDR_2BIT ? 4 : 2) *(CONFIG_NR_DRAM_BANKS);
+	banks = (SDRAM_BANK4 ? 4 : 2) *(CONFIG_NR_DRAM_BANKS);
 #else
 	banks = (DDR_BANK8 ? 8 : 4) *(DDR_CS0EN + DDR_CS1EN);
 #endif
@@ -487,7 +487,7 @@ for(times = 0; times < banks; times++) {
 	DDR_DMA1_DST = DDR_DMA_BASE + banksize*(banks - 1) + testsize*3;
 #endif
 
-	cpu_clk = ARG_CPU_SPEED;
+	cpu_clk = CFG_CPU_SPEED;
 
 #ifdef DMA_CHANNEL0_EN
 	addr = DDR_DMA0_SRC;
@@ -560,7 +560,7 @@ void ddr_mem_init(int msel, int hl, int tsel, int arg)
 	register unsigned int cpu_clk, ddr_twr;
 	register unsigned int ddrc_cfg_reg=0, init_ddrc_mdelay=0;
 
-	cpu_clk = ARG_CPU_SPEED;
+	cpu_clk = CFG_CPU_SPEED;
 
 #if defined(CONFIG_SDRAM_DDR2) // ddr2
 	ddrc_cfg_reg = DDRC_CFG_TYPE_DDR2 | (DDR_ROW-12)<<10
@@ -869,14 +869,14 @@ void sdram_init_4760(void)
 #endif
 
 	testall = 0; 
-	cpu_clk = ARG_CPU_SPEED;
+	cpu_clk = CFG_CPU_SPEED;
 
 #ifdef DEBUG
 	ddrc_regs_print();
 #endif
 
 #if defined(CONFIG_FPGA)
-	mem_clk = ARG_EXTAL / CFG_DIV;
+	mem_clk = CFG_EXTAL / CFG_DIV;
 	ns = 7;
 #else
 	mem_clk = __cpm_get_mclk();
@@ -1157,7 +1157,7 @@ void sdram_init_4760(void)
 
 	int div[] = {1, 2, 3, 4, 6, 8, 12, 16, 24, 32};
 
-	cpu_clk = ARG_CPU_SPEED;
+	cpu_clk = CFG_CPU_SPEED;
 	mem_clk = cpu_clk * div[__cpm_get_cdiv()] / div[__cpm_get_mdiv()];
 
 	REG_EMC_BCR = 0;	/* Disable bus release */
@@ -1178,7 +1178,7 @@ void sdram_init_4760(void)
 	/* Basic DMCR value */
 	dmcr = ((SDRAM_ROW-11)<<EMC_DMCR_RA_BIT) |
 		((SDRAM_COL-8)<<EMC_DMCR_CA_BIT) |
-		(ARG_BANK_ADDR_2BIT<<EMC_DMCR_BA_BIT) |
+		(SDRAM_BANK4<<EMC_DMCR_BA_BIT) |
 		(SDRAM_BW16<<EMC_DMCR_BW_BIT) |
 		EMC_DMCR_EPIN |
 		cas_latency_dmcr[((SDRAM_CASL == 3) ? 1 : 0)];
@@ -1248,10 +1248,7 @@ static void serial_setbrg(void)
 	volatile u8 *uart_dllr = (volatile u8 *)(UART_BASE + OFF_DLLR);
 	u32 baud_div, tmp;
 
-//	baud_div = (REG_CPM_CPCCR & CPM_CPCCR_ECS) ?
-//		(ARG_EXTAL / 32 / CONFIG_BAUDRATE) : (ARG_EXTAL / 16 / CONFIG_BAUDRATE);
-
-	baud_div = (ARG_EXTAL / 16 / 57600);
+	baud_div = (CFG_EXTAL / 16 / 57600);
 	tmp = *uart_lcr;
 	tmp |= UART_LCR_DLAB;
 	*uart_lcr = tmp;

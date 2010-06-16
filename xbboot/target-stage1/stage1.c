@@ -35,19 +35,6 @@ void load_args_4740()
 	ARG_COL_ADDR = 9;
 }
 
-void load_args_4760()
-{
-	ARG_EXTAL = 12 * 1000000;
-	ARG_CPU_SPEED = 12 * ARG_EXTAL;
-	ARG_PHM_DIV = 3;
-	ARG_UART_BAUD = 57600;
-	ARG_BUS_WIDTH_16 = * (int *)0x80002014;
-	ARG_BANK_ADDR_2BIT = 4;
-	ARG_ROW_ADDR = 13;
-	ARG_COL_ADDR = 10;
-}
-
-
 void c_main(void)
 {
 	ARG_CPU_ID = * (int *)0x80002008;
@@ -63,7 +50,6 @@ void c_main(void)
 		serial_puts("Ben NanoNote\n");
 		break;
 	case 0x4760:	
-		load_args_4760();
 		gpio_init_4760();
 		cpm_start_all_4760();
 		serial_init_4760(1);

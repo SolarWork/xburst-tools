@@ -10,6 +10,9 @@
 //#define CONFIG_FPGA
 //#define CFG_DIV	2	/* for FPGA */
 
+#define CFG_EXTAL               12000000
+#define CFG_CPU_SPEED           144000000       /* CPU clock */
+
 #define CONFIG_DDRC
 #define CONFIG_SDRAM_DDR2
 //#define CONFIG_SDRAM_MDDR
