@@ -24,6 +24,7 @@
 #include "ingenic_usb.h"
 
 extern unsigned int total_size;
+extern struct hand hand;
 
 static int get_ingenic_device(struct ingenic_dev *ingenic_dev)
 {
@@ -38,8 +39,10 @@ static int get_ingenic_device(struct ingenic_dev *ingenic_dev)
 		     usb_dev = usb_dev->next) {
 
 			if ((usb_dev->descriptor.idVendor == VENDOR_ID) &&
-				(usb_dev->descriptor.idProduct == PRODUCT_ID)) {
+				(usb_dev->descriptor.idProduct == PRODUCT_ID_4740 ||
+				usb_dev->descriptor.idProduct == PRODUCT_ID_4760)) {
 				ingenic_dev->usb_dev = usb_dev;
+				hand.fw_args.cpu_id = usb_dev->descriptor.idProduct;
 				count++;
 			}
 
@@ -168,8 +171,10 @@ int usb_get_ingenic_cpu(struct ingenic_dev *ingenic_dev)
 
 	if (!strcmp(ingenic_dev->cpu_info_buff,"JZ4740V1")) return JZ4740V1;
 	if (!strcmp(ingenic_dev->cpu_info_buff,"JZ4750V1")) return JZ4750V1;
+	if (!strcmp(ingenic_dev->cpu_info_buff,"JZ4760V1")) return JZ4760V1;
 	if (!strcmp(ingenic_dev->cpu_info_buff,"Boot4740")) return BOOT4740;
 	if (!strcmp(ingenic_dev->cpu_info_buff,"Boot4750")) return BOOT4750;
+	if (!strcmp(ingenic_dev->cpu_info_buff,"Boot4760")) return BOOT4760;
 
 	return -1;
 }

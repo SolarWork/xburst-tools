@@ -39,8 +39,10 @@
 
 #define JZ4740V1	1
 #define JZ4750V1	2
-#define BOOT4740	3
-#define BOOT4750	4
+#define JZ4760V1	3
+#define BOOT4740	4
+#define BOOT4750	5
+#define BOOT4760	6
 
 #define STAGE_ADDR_MSB(addr) ((addr) >> 16)
 #define STAGE_ADDR_LSB(addr) ((addr) & 0xffff)
@@ -49,7 +51,9 @@
 #define USB_TIMEOUT	5000
 
 #define VENDOR_ID	0x601a
-#define PRODUCT_ID	0x4740
+#define PRODUCT_ID_4740	0x4740
+#define PRODUCT_ID_4750	0x4750
+#define PRODUCT_ID_4760	0x4760
 
 #define STAGE1_FILE_PATH (DATADIR "xburst_stage1.bin")
 #define STAGE2_FILE_PATH (DATADIR "xburst_stage2.bin")

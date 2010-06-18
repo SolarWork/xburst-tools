@@ -126,21 +126,29 @@ int boot(char *stage1_path, char *stage2_path){
 
 	status = usb_get_ingenic_cpu(&ingenic_dev);
 	switch (status)	{
-	case 1:            /* Jz4740v1 */
+	case JZ4740V1:
 		status = 0;
 		hand.fw_args.cpu_id = 0x4740;
 		break;
-	case 2:            /* Jz4750v1 */
+	case JZ4750V1:
 		status = 0;
 		hand.fw_args.cpu_id = 0x4750;
 		break;
-	case 3:            /* Boot4740 */
+	case JZ4760V1:
+		status = 0;
+		hand.fw_args.cpu_id = 0x4760;
+		break;
+	case BOOT4740:
 		status = 1;
 		hand.fw_args.cpu_id = 0x4740;
 		break;
-	case 4:            /* Boot4750 */
+	case BOOT4750:
 		status = 1;
 		hand.fw_args.cpu_id = 0x4750;
+		break;
+	case BOOT4760:
+		status = 1;
+		hand.fw_args.cpu_id = 0x4760;
 		break;
 	default:
 		return 1;
@@ -240,7 +248,7 @@ int nand_program_check(struct nand_in *nand_in,
 #endif
 
 	int cpu = usb_get_ingenic_cpu(&ingenic_dev);
-	if (cpu != BOOT4740 && cpu != BOOT4750) {
+	if (cpu != BOOT4740 && cpu != BOOT4750 && cpu != BOOT4760) {
 		printf(" Device unboot! Boot it first!\n");
 		goto err;
 	}

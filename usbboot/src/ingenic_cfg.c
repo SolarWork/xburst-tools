@@ -25,37 +25,6 @@
 
 extern unsigned int total_size;
 
-int hand_init_def(struct hand *hand)
-{
-	/* nand flash info */
-	/* hand.nand_start=0; */ /* important !!!! */
-	hand->pt = JZ4740;    /* cpu type  */
-	hand->nand_bw = 8;
-	hand->nand_rc = 3;
-	hand->nand_ps = 2048;
-	hand->nand_os = 64;
-	hand->nand_ppb = 64;
-	hand->nand_eccpos = 6;
-	hand->nand_bbpage = 0;
-	hand->nand_bbpos  = 0;
-	hand->nand_force_erase = 0;
-	/* hand.nand_ids=0;  */ /* vendor_id & device_id */
-	hand->fw_args.cpu_id = 0x4740;
-	hand->fw_args.ext_clk = 12;
-	hand->fw_args.cpu_speed = 225 / hand->fw_args.ext_clk;
-	hand->fw_args.phm_div = 3;
-	hand->fw_args.use_uart = 0;
-	hand->fw_args.boudrate = 57600;
-	hand->fw_args.bus_width = 0;
-	hand->fw_args.bank_num = 1;
-	hand->fw_args.row_addr = 13;
-	hand->fw_args.col_addr = 9;
-	hand->fw_args.is_mobile = 0;
-	hand->fw_args.is_busshare = 1;
-
-	return 1;
-}
-
 int check_dump_cfg(struct hand *hand)
 {
 	printf("Now checking whether all configure args valid:");
@@ -149,8 +118,6 @@ int parse_configure(struct hand *hand, char * file_path)
 		return -1;
 	}
 
-	hand_init_def(hand);
-
 	cfg_opt_t opts[] = {
 		CFG_INT("BOUDRATE", 57600, CFGF_NONE),
 		CFG_INT("EXTCLK", 0, CFGF_NONE),
@@ -226,7 +193,6 @@ int parse_configure(struct hand *hand, char * file_path)
 
 	cfg_free(cfg);
 
-	hand->fw_args.cpu_id = 0x4740;
 	if (hand->fw_args.bus_width == 32)
 		hand->fw_args.bus_width = 0;
 	else
