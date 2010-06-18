@@ -16,9 +16,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA
  */
-#include "jz4750.h"
-#include "nandflash.h"
-#include "usb_boot.h"
+#include "target/jz4750.h"
+#include "target/nandflash.h"
+#include "target/usb_boot.h"
 #include "usb_boot_defines.h"
 
 #define dprintf(n...)

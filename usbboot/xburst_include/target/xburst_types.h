@@ -15,4 +15,8 @@ typedef unsigned char u8;
 typedef unsigned short u16;
 typedef unsigned int u32;
 
+#define REG8(addr)	*((volatile u8 *)(addr))
+#define REG16(addr)	*((volatile u16 *)(addr))
+#define REG32(addr)	*((volatile u32 *)(addr))
+
 #endif /* __XBURST_TYPES_H__ */

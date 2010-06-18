@@ -16,10 +16,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA
  */
-#include <jz4740.h>
-#include "usb.h"
-#include "udc.h"
-#include "usb_boot.h"
+#include "target/jz4740.h"
+#include "usb/usb.h"
+#include "usb/udc.h"
+#include "target/usb_boot.h"
 
 #define dprintf(x...)  
 #define TXFIFOEP0 USB_FIFO_EP0

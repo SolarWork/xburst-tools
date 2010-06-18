@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA
  */
-#include "jz4740.h"
-#include "configs.h"
+#include "target/jz4740.h"
+#include "target/configs.h"
 #include "usb_boot_defines.h"
 
 struct fw_args *fw_args;

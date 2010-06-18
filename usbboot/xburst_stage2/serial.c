@@ -16,7 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA
  */
-#include "jz4750.h"
+#include "target/jz4740.h"
 
 volatile u32 UART_BASE;
 #define CONFIG_BAUDRATE 57600

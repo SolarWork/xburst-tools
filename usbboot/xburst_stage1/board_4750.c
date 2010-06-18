@@ -19,8 +19,9 @@
  * Boston, MA  02110-1301, USA
  */
 
-#include "jz4750.h"
-#include "configs.h"
+#include <stdint.h>
+#include "target/jz4750.h"
+#include "target/configs.h"
 
 void gpio_init_4750(void)
 {

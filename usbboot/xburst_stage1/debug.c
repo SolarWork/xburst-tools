@@ -19,8 +19,8 @@
  * Boston, MA  02110-1301, USA
  */
 
-#include "jz4750.h"
-#include "configs.h"
+#include "target/jz4750.h"
+#include "target/configs.h"
 #include "usb_boot_defines.h"
 
 extern struct fw_args *fw_args;

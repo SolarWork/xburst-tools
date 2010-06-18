@@ -19,13 +19,14 @@
  * Boston, MA  02110-1301, USA
  */
 
-#include "jz4740.h"
-#include "usb.h" 
-#include "error.h"
-#include "usb_boot.h"
+#include "target/jz4740.h"
+#include "target/error.h"
+#include "target/usb_boot.h"
 #include "usb_boot_defines.h"
-#include "nandflash.h"
-#include "udc.h"
+#include "target/nandflash.h"
+#include "usb/udc.h"
+#include "usb/usb.h" 
+
 #define dprintf(x) serial_puts(x)
 
 unsigned int (*nand_query)(u8 *);

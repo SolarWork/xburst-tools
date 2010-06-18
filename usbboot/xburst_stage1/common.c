@@ -19,8 +19,8 @@
  * Boston, MA  02110-1301, USA
  */
 
-#include "jz4740.h"
-#include "configs.h"
+#include "target/jz4740.h"
+#include "target/configs.h"
 
 void serial_putc (const char c)
 {

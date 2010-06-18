@@ -17,9 +17,9 @@
  * Boston, MA  02110-1301, USA
  */
 
-#include "nandflash.h"
-#include "jz4740.h"
-#include "usb_boot.h"
+#include "target/nandflash.h"
+#include "target/jz4740.h"
+#include "target/usb_boot.h"
 #include "usb_boot_defines.h"
 
 #define __nand_enable()	(REG_EMC_NFCSR |= EMC_NFCSR_NFE1 | EMC_NFCSR_NFCE1)
