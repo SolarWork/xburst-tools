@@ -23,31 +23,6 @@
 
 #include "xburst_types.h"
 
-#ifndef __ASSEMBLY__
-#define UCOS_CSP 0
-
-#if UCOS_CSP
-#define __KERNEL__
-#include <bsp.h>
-#include <types.h>
-
-#include <sysdefs.h>
-#include <cacheops.h>
-#define KSEG0 KSEG0BASE
-#else
-/* #include <asm/cacheops.h> */
-#endif
-
-#define cache_unroll(base,op)	        	\
-	__asm__ __volatile__("	         	\
-		.set noreorder;		        \
-		.set mips3;		        \
-		cache %1, (%0);	                \
-		.set mips0;			\
-		.set reorder"			\
-		:				\
-		: "r" (base),			\
-		  "i" (op));
 #if 0
 static inline void jz_flush_dcache(void)
 {
@@ -76,6 +51,16 @@ static inline void jz_flush_icache(void)
 }
 
 #endif
+#define cache_unroll(base,op)	        	\
+	__asm__ __volatile__("	         	\
+		.set noreorder;		        \
+		.set mips3;		        \
+		cache %1, (%0);	                \
+		.set mips0;			\
+		.set reorder"			\
+		:				\
+		: "r" (base),			\
+		  "i" (op));
 /* cpu pipeline flush */
 static inline void jz_sync(void)
 {
@@ -111,18 +96,6 @@ static inline u32 jz_readl(u32 address)
 {
 	return *((volatile u32 *)address);
 }
-
-#define REG8(addr)	*((volatile u8 *)(addr))
-#define REG16(addr)	*((volatile u16 *)(addr))
-#define REG32(addr)	*((volatile u32 *)(addr))
-
-#else
-
-#define REG8(addr)	(addr)
-#define REG16(addr)	(addr)
-#define REG32(addr)	(addr)
-
-#endif /* !ASSEMBLY */
 
 /* Boot ROM Specification */
 

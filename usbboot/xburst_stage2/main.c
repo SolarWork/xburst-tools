@@ -19,9 +19,9 @@
 #include "usb_boot_defines.h"
 
 extern void usb_main();
-unsigned int start_addr,got_start,got_end;
 extern unsigned int UART_BASE;
 struct fw_args *fw_args;
+unsigned int start_addr,got_start,got_end;
 
 void c_main(void)
 {
@@ -47,14 +47,16 @@ void c_main(void)
 	offset = start_addr - 0x80000000;	
  	got_start += offset;
 	got_end  += offset;
+	/* add offset to correct all GOT */
+	for(addr = got_start + 8; addr < got_end; addr += 4)
+		*((volatile unsigned int *)(addr)) += offset;
+	
+	/* get the fw args from memory */
+	fw_args = (struct fw_args *)(start_addr + 0x8);
 
-	for ( addr = got_start + 8; addr < got_end; addr += 4 )
-	{
-		*((volatile unsigned int *)(addr)) += offset;   //add offset to correct all GOT
-	}
+	extern struct hand Hand;
+	Hand.fw_args.cpu_id = fw_args->cpu_id;
 
-	fw_args = (struct fw_args *)(start_addr + 0x8);       //get the fw args from memory
-	if ( fw_args->use_uart > 3 ) fw_args->use_uart = 0;
 	UART_BASE = 0xB0030000 + fw_args->use_uart * 0x1000;
 
 	serial_puts("\n Stage2 start address is :\t");

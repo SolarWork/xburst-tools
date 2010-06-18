@@ -1,38 +1,27 @@
 /*
  * Include file for Ingenic Semiconductor's JZ4760 CPU.
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 3 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA  02110-1301, USA
  */
 #ifndef __JZ4760_H__
 #define __JZ4760_H__
 
 #include "target/xburst_types.h"
 
-#if 0 /* if 0, for spl program */
-#define UCOS_CSP 0
-
-#if UCOS_CSP
-#define __KERNEL__
-#include <bsp.h>
-#include <types.h>
-
-#include <sysdefs.h>
-#include <cacheops.h>
-#define KSEG0 KSEG0BASE
-#else
-#include <asm/addrspace.h>
-#include <asm/cacheops.h>
-#endif
-
-#define cache_unroll(base,op)	        	\
-	__asm__ __volatile__("	         	\
-		.set noreorder;		        \
-		.set mips3;		        \
-		cache %1, (%0);	                \
-		.set mips0;			\
-		.set reorder"			\
-		:				\
-		: "r" (base),			\
-		  "i" (op));
-
+#if 1 /* if 0, for spl program */
+#if 0
 static inline void jz_flush_dcache(void)
 {
 	unsigned long start;
@@ -58,6 +47,17 @@ static inline void jz_flush_icache(void)
 		start += CFG_CACHELINE_SIZE;
 	}
 }
+#endif
+#define cache_unroll(base,op)	        	\
+	__asm__ __volatile__("	         	\
+		.set noreorder;		        \
+		.set mips3;		        \
+		cache %1, (%0);	                \
+		.set mips0;			\
+		.set reorder"			\
+		:				\
+		: "r" (base),			\
+		  "i" (op));
 
 /* cpu pipeline flush */
 static inline void jz_sync(void)
@@ -91,6 +91,7 @@ static inline u16 jz_readw(u32 address)
 }
 
 static inline u32 jz_readl(u32 address)
+
 {
 	return *((volatile u32 *)address);
 }

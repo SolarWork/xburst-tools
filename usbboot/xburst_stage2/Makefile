@@ -22,6 +22,7 @@ OBJCOPY	= $(CROSS_COMPILE)objcopy
 NM	= $(CROSS_COMPILE)nm
 OBJDUMP	= $(CROSS_COMPILE)objdump
 
+DEVICE ?=NANONOTE
 DEBUG_CFLAGS = -g -Wa,-a=$(basename $@).lst
 # Wolfgang saw data corruptions in stage2 when dealing with ECC data on random writes
 # to NAND. Disabling the unit-at-a-time optimization reproducibly fixed the bug.
@@ -30,10 +31,10 @@ DEBUG_CFLAGS = -g -Wa,-a=$(basename $@).lst
 # is to disable this optimization right now.
 CFLAGS	= -mips32 -O2 -fno-exceptions -fno-zero-initialized-in-bss \
 	-ffunction-sections -fomit-frame-pointer -msoft-float -G 0 -fpie \
-	-I$(XBURST_INCLUDE_PATH) -I$(INFLASH_SRC_PATH)
+	-I$(XBURST_INCLUDE_PATH) -I$(INFLASH_SRC_PATH) -D$(DEVICE) 
 LDFLAGS	= -nostdlib -T target.ld $(CFLAGS)
 
-OBJS	= main.o udc.o cache.o serial.o boothandler.o nandflash_4740.o nandflash_4750.o
+OBJS	= main.o udc.o cache.o serial.o boothandler.o nandflash_4740.o nandflash_4760.o
 
 all: xburst_stage2.elf
 	$(OBJCOPY) -O binary xburst_stage2.elf xburst_stage2.bin

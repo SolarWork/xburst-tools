@@ -61,31 +61,30 @@ int check_dump_cfg(struct hand *hand)
 	}
 
 	/* check NAND */
-	if ( hand->nand_ps < 2048 && hand->nand_os > 16 ) {
+	if (hand->nand_ps < 2048 && hand->nand_os > 16) {
 		printf(" PAGESIZE or OOBSIZE setting invalid!\n");
 		printf(" PAGESIZE is %d,\t OOBSIZE is %d\n", 
 		       hand->nand_ps, hand->nand_os);
 		return 0;
 	}
-	if ( hand->nand_ps < 2048 && hand->nand_ppb > 32 ) {
+	if (hand->nand_ps < 2048 && hand->nand_ppb > 32) {
 		printf(" PAGESIZE or PAGEPERBLOCK setting invalid!\n");
 		return 0;
 	}
 
-	if ( hand->nand_ps > 512 && hand->nand_os <= 16 ) {
+	if (hand->nand_ps > 512 && hand->nand_os <= 16) {
 		printf(" PAGESIZE or OOBSIZE setting invalid!\n");
 		printf(" PAGESIZE is %d,\t OOBSIZE is %d\n", 
 		       hand->nand_ps, hand->nand_os);
 		return 0;
 	}
-	if ( hand->nand_ps > 512 && hand->nand_ppb < 64 ) {
+	if (hand->nand_ps > 512 && hand->nand_ppb < 64) {
 		printf(" PAGESIZE or PAGEPERBLOCK setting invalid!\n");
 		return 0;
 	}
 	printf(" YES\n");
 
-	printf("Current device information:\n");
-	printf("CPU type is Ingenic XBurst Jz%x\n",hand->fw_args.cpu_id);
+	printf("Current device setup information:\n");
 	printf("Crystal work at %dMHz, the CCLK up to %dMHz and PMH_CLK up to %dMHz\n",
 		hand->fw_args.ext_clk,
 		(unsigned int)hand->fw_args.cpu_speed * hand->fw_args.ext_clk,

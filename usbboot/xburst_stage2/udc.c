@@ -16,15 +16,26 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA
  */
-#include "target/jz4740.h"
 #include "usb/usb.h"
 #include "usb/udc.h"
 #include "target/usb_boot.h"
+#include "target/xburst_types.h"
 
-#define dprintf(x...)  
+#if defined(NANONOTE)
+#include "target/jz4740.h"
+#elif defined(LEPUS)
+#include "target/jz4760.h"
+#else
+	#error "Please Define JZ4740 or JZ4760"
+#endif
+
+#define dprintf(x...)  serial_puts(x)
 #define TXFIFOEP0 USB_FIFO_EP0
 
-u32 Bulk_buf[BULK_BUF_SIZE];
+extern void serial_put_hex(int );
+
+u32 Bulk_in_buf[BULK_IN_BUF_SIZE];
+u32 Bulk_out_buf[BULK_OUT_BUF_SIZE];
 u32 Bulk_in_size, Bulk_in_finish, Bulk_out_size;
 u16 handshake_PKT[4] = {0, 0, 0, 0};
 u8 udc_state;
@@ -512,12 +523,12 @@ void EPIN_Handler(u8 EP)
 	}
 
 	if (Bulk_in_size - Bulk_in_finish <= fifosize[EP]) {
-		udcWriteFifo((u8 *)((u32)Bulk_buf+Bulk_in_finish),
+		udcWriteFifo((u8 *)((u32)Bulk_in_buf+Bulk_in_finish),
 			     Bulk_in_size - Bulk_in_finish);
 		usb_setw(USB_REG_INCSR, USB_INCSR_INPKTRDY);
 		Bulk_in_finish = Bulk_in_size;
 	} else {
-		udcWriteFifo((u8 *)((u32)Bulk_buf+Bulk_in_finish),
+		udcWriteFifo((u8 *)((u32)Bulk_in_buf+Bulk_in_finish),
 			    fifosize[EP]);
 		usb_setw(USB_REG_INCSR, USB_INCSR_INPKTRDY);
 		Bulk_in_finish += fifosize[EP];
@@ -530,7 +541,7 @@ void EPOUT_Handler(u8 EP)
 	jz_writeb(USB_REG_INDEX, EP);
 	size = jz_readw(USB_REG_OUTCOUNT);
 	fifo = fifoaddr[EP];
-	udcReadFifo((u8 *)((u32)Bulk_buf+Bulk_out_size), size);
+	udcReadFifo((u8 *)((u32)Bulk_out_buf+Bulk_out_size), size);
 	usb_clearb(USB_REG_OUTCSR,USB_OUTCSR_OUTPKTRDY);
 	Bulk_out_size += size;
 	dprintf("\nEPOUT_handle return!");
@@ -541,7 +552,7 @@ void udc4740Proc ()
 	volatile u8	IntrUSB;
 	volatile u16	IntrIn;
 	volatile u16	IntrOut;
-/* Read interrupt registers */
+	/* Read interrupt registers */
 	IntrUSB = jz_readb(USB_REG_INTRUSB);
 	IntrIn  = jz_readw(USB_REG_INTRIN);
 	IntrOut = jz_readw(USB_REG_INTROUT);
@@ -564,7 +575,7 @@ void udc4740Proc ()
 		udc_reset();
 	}
 		
-/* Check for endpoint 0 interrupt */
+	/* Check for endpoint 0 interrupt */
 	if (IntrIn & USB_INTR_EP0) {
 		dprintf("\nUDC EP0 operations!");
 		EP0_Handler();

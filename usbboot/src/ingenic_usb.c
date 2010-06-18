@@ -24,7 +24,6 @@
 #include "ingenic_usb.h"
 
 extern unsigned int total_size;
-extern struct hand hand;
 
 static int get_ingenic_device(struct ingenic_dev *ingenic_dev)
 {
@@ -42,7 +41,6 @@ static int get_ingenic_device(struct ingenic_dev *ingenic_dev)
 				(usb_dev->descriptor.idProduct == PRODUCT_ID_4740 ||
 				usb_dev->descriptor.idProduct == PRODUCT_ID_4760)) {
 				ingenic_dev->usb_dev = usb_dev;
-				hand.fw_args.cpu_id = usb_dev->descriptor.idProduct;
 				count++;
 			}
 

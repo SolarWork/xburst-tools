@@ -42,8 +42,9 @@ u32 (*nand_mark_bad) (int bad);
 void (*nand_enable) (unsigned int csn);
 void (*nand_disable) (unsigned int csn);
 
-struct hand Hand,*Hand_p;
-extern u32 Bulk_buf[BULK_BUF_SIZE];
+struct hand Hand;
+extern u32 Bulk_out_buf[BULK_OUT_BUF_SIZE];
+extern u32 Bulk_in_buf[BULK_IN_BUF_SIZE];
 extern u16 handshake_PKT[4];
 extern udc_state;
 extern void *memset(void *s, int c, size_t count);
@@ -54,10 +55,6 @@ u32 start_addr;  //program operation start address or sector
 u32 ops_length;  //number of operation unit ,in byte or sector
 u32 ram_addr;
 
-void config_flash_info()
-{
-}
-
 void dump_data(unsigned int *p, int size)
 {
 	int i;
@@ -65,38 +62,30 @@ void dump_data(unsigned int *p, int size)
 		serial_put_hex(*p++);
 }
 
+void config_flash_info()
+{
+}
+
 void config_hand()
 {
-	struct hand *hand_p;
-	hand_p=(struct hand *)Bulk_buf;
-	memcpy(&Hand, (unsigned char *)Bulk_buf, sizeof(struct hand));
-
-#if 0
-	Hand.nand_bw=hand_p->nand_bw;
-	Hand.nand_rc=hand_p->nand_rc;
-	Hand.nand_ps=hand_p->nand_ps;
-	Hand.nand_ppb=hand_p->nand_ppb;
-	Hand.nand_force_erase=hand_p->nand_force_erase;
-	Hand.nand_pn=hand_p->nand_pn;
-	Hand.nand_os=hand_p->nand_os;
-
-	Hand.nand_eccpos=hand_p->nand_eccpos;
-	Hand.nand_bbpos=hand_p->nand_bbpos;
-	Hand.nand_bbpage=hand_p->nand_bbpage;
-	serial_put_hex(Hand.fw_args.cpu_id);
-	serial_put_hex(Hand.fw_args.ext_clk);
-#endif
+	memcpy(&Hand, (unsigned char *)Bulk_out_buf, sizeof(struct hand));
 }
 
 int GET_CUP_INFO_Handle()
 {
-	char temp1[8]="Boot4740",temp2[8]="Boot4750";
 	dprintf("\n GET_CPU_INFO:\t");
 	serial_put_hex(Hand.fw_args.cpu_id);
-	if (Hand.fw_args.cpu_id == 0x4740)
-		HW_SendPKT(0, temp1, 8);
-	else
-		HW_SendPKT(0, temp2, 8);
+	switch (Hand.fw_args.cpu_id) {
+	case 0x4760:
+		HW_SendPKT(0, "Boot4760", 8);
+		break;
+	case 0x4740:
+		HW_SendPKT(0, "Boot4740", 8);
+		break;
+	default:
+		HW_SendPKT(0, " UNKNOW ", 8);
+		break;
+	}
 	udc_state = IDLE;
 	return ERR_OK; 
 }
@@ -165,8 +154,8 @@ int NAND_OPS_Handle(u8 *buf)
 	{
 	case NAND_QUERY:
 		dprintf("\n Request : NAND_QUERY!");
-		nand_query((u8 *)Bulk_buf);
-		HW_SendPKT(1, Bulk_buf, 8);
+		nand_query((u8 *)Bulk_in_buf);
+		HW_SendPKT(1, Bulk_in_buf, 8);
 		handshake_PKT[3]=(u16)ERR_OK;
 		udc_state = BULK_IN;
 		break;
@@ -185,11 +174,11 @@ int NAND_OPS_Handle(u8 *buf)
 		break;
 	case NAND_READ_OOB:
 		dprintf("\n Request : NAND_READ_OOB!");
-		memset(Bulk_buf,0,ops_length*Hand.nand_ps);
-		ret_dat = nand_read_oob(Bulk_buf,start_addr,ops_length);
+		memset(Bulk_in_buf,0,ops_length*Hand.nand_ps);
+		ret_dat = nand_read_oob(Bulk_in_buf,start_addr,ops_length);
 		handshake_PKT[0] = (u16) ret_dat;
 		handshake_PKT[1] = (u16) (ret_dat>>16);
-		HW_SendPKT(1,(u8 *)Bulk_buf,ops_length*Hand.nand_ps);
+		HW_SendPKT(1,(u8 *)Bulk_in_buf,ops_length*Hand.nand_ps);
 		udc_state = BULK_IN;		
 		break;
 	case NAND_READ_RAW:
@@ -197,15 +186,15 @@ int NAND_OPS_Handle(u8 *buf)
 		switch (option)
 		{
 		case OOB_ECC:
-			nand_read_raw(Bulk_buf,start_addr,ops_length,option);
-			HW_SendPKT(1,(u8 *)Bulk_buf,ops_length*(Hand.nand_ps + Hand.nand_os));
+			nand_read_raw(Bulk_in_buf,start_addr,ops_length,option);
+			HW_SendPKT(1,(u8 *)Bulk_in_buf,ops_length*(Hand.nand_ps + Hand.nand_os));
 			handshake_PKT[0] = (u16) ret_dat;
 			handshake_PKT[1] = (u16) (ret_dat>>16);
 			udc_state = BULK_IN;
 			break;
 		default:
-			nand_read_raw(Bulk_buf,start_addr,ops_length,option);
-			HW_SendPKT(1,(u8 *)Bulk_buf,ops_length*Hand.nand_ps);
+			nand_read_raw(Bulk_in_buf,start_addr,ops_length,option);
+			HW_SendPKT(1,(u8 *)Bulk_in_buf,ops_length*Hand.nand_ps);
 			handshake_PKT[0] = (u16) ret_dat;
 			handshake_PKT[1] = (u16) (ret_dat>>16);
 			udc_state = BULK_IN;
@@ -226,24 +215,24 @@ int NAND_OPS_Handle(u8 *buf)
 		dprintf("\n Request : NAND_READ!");
 		switch (option) {
 		case 	OOB_ECC:
-			ret_dat = nand_read(Bulk_buf,start_addr,ops_length,OOB_ECC);
+			ret_dat = nand_read(Bulk_in_buf,start_addr,ops_length,OOB_ECC);
 			handshake_PKT[0] = (u16) ret_dat;
 			handshake_PKT[1] = (u16) (ret_dat>>16);
-			HW_SendPKT(1,(u8 *)Bulk_buf,ops_length*(Hand.nand_ps + Hand.nand_os ));
+			HW_SendPKT(1,(u8 *)Bulk_in_buf,ops_length*(Hand.nand_ps + Hand.nand_os ));
 			udc_state = BULK_IN;
 			break;
 		case 	OOB_NO_ECC:
-			ret_dat = nand_read(Bulk_buf,start_addr,ops_length,OOB_NO_ECC);
+			ret_dat = nand_read(Bulk_in_buf,start_addr,ops_length,OOB_NO_ECC);
 			handshake_PKT[0] = (u16) ret_dat;
 			handshake_PKT[1] = (u16) (ret_dat>>16);
-			HW_SendPKT(1,(u8 *)Bulk_buf,ops_length*(Hand.nand_ps + Hand.nand_os));
+			HW_SendPKT(1,(u8 *)Bulk_in_buf,ops_length*(Hand.nand_ps + Hand.nand_os));
 			udc_state = BULK_IN;
 			break;
 		case 	NO_OOB:
-			ret_dat = nand_read(Bulk_buf,start_addr,ops_length,NO_OOB);
+			ret_dat = nand_read(Bulk_in_buf,start_addr,ops_length,NO_OOB);
 			handshake_PKT[0] = (u16) ret_dat;
 			handshake_PKT[1] = (u16) (ret_dat>>16);
-			HW_SendPKT(1,(u8 *)Bulk_buf,ops_length*Hand.nand_ps);
+			HW_SendPKT(1,(u8 *)Bulk_in_buf,ops_length*Hand.nand_ps);
 			udc_state = BULK_IN;
 			break;
 		}
@@ -251,7 +240,7 @@ int NAND_OPS_Handle(u8 *buf)
 		break;
 	case NAND_PROGRAM:
 		dprintf("\n Request : NAND_PROGRAM!");
-		ret_dat = nand_program((void *)Bulk_buf,
+		ret_dat = nand_program((void *)Bulk_out_buf,
 			     start_addr,ops_length,option);
 		handshake_PKT[0] = (u16) ret_dat;
 		handshake_PKT[1] = (u16) (ret_dat>>16);
@@ -285,7 +274,7 @@ int SDRAM_OPS_Handle(u8 *buf)
 	{
 	case 	SDRAM_LOAD:
 		//dprintf("\n Request : SDRAM_LOAD!");
-		ret_dat = (u32)memcpy((u8 *)start_addr,Bulk_buf,ops_length);
+		ret_dat = (u32)memcpy((u8 *)start_addr,Bulk_out_buf,ops_length);
 		handshake_PKT[0] = (u16) ret_dat;
 		handshake_PKT[1] = (u16) (ret_dat>>16);
 		HW_SendPKT(1,handshake_PKT,sizeof(handshake_PKT));
@@ -316,25 +305,25 @@ void Borad_Init()
 		nand_enable = nand_enable_4740;
 		nand_disable = nand_disable_4740;
 		nand_mark_bad = nand_mark_bad_4740;
-	break;
-	case 0x4750:
+		break;
+	case 0x4760:
 		//Init nand flash
-		nand_init_4750(Hand.nand_bw, Hand.nand_rc, Hand.nand_ps,
+		nand_init_4760(Hand.nand_bw, Hand.nand_rc, Hand.nand_ps,
 			       Hand.nand_ppb, Hand.nand_bchbit, Hand.nand_eccpos,
 			       Hand.nand_bbpos, Hand.nand_bbpage, Hand.nand_force_erase);
 
-		nand_program = nand_program_4750;
-		nand_erase = nand_erase_4750;
-		nand_read = nand_read_4750;
-		nand_read_oob = nand_read_oob_4750;
-		nand_read_raw = nand_read_raw_4750;
-		nand_query = nand_query_4750;
-		nand_enable = nand_enable_4750;
-		nand_disable = nand_disable_4750;
-		nand_mark_bad = nand_mark_bad_4750;
-	break;
+		nand_program=nand_program_4760;
+		nand_erase  =nand_erase_4760;
+		nand_read   =nand_read_4760;
+		nand_read_oob=nand_read_oob_4760;
+		nand_read_raw=nand_read_raw_4760;
+		nand_query  = nand_query_4760;
+		nand_enable = nand_enable_4760;
+		nand_disable= nand_disable_4760;
+		nand_mark_bad = nand_mark_bad_4760;
+		break;
 	default:
-		serial_puts("Not support CPU ID!");
+		serial_puts("\n Not support CPU ID!");
 	}
 }
 
