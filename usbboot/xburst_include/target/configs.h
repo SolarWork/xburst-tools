@@ -25,6 +25,7 @@
 /* Once your system configration change, just modify the file */
 
 #include "target/xburst_types.h"
+
 #define CONFIG_NR_DRAM_BANKS	1	/* SDRAM BANK Number: 1, 2*/
 #define SDRAM_CASL		3	/* CAS latency: 2 or 3 */
 /* SDRAM Timings, unit: ns */
@@ -33,7 +34,6 @@
 #define SDRAM_TPC		20	/* RAS# Precharge Time */
 #define SDRAM_TRWL		7	/* Write Latency Time */
 #define SDRAM_TREF	        15625	/* Refresh period: 4096 refresh cycles/64ms */
-
 
 extern volatile u32 CPU_ID;
 extern volatile u8 SDRAM_BW16;
@@ -48,13 +48,4 @@ extern volatile u32 CONFIG_BAUDRATE;
 extern volatile u32 UART_BASE;
 extern volatile u8 CONFIG_MOBILE_SDRAM;
 extern volatile u8 IS_SHARE;
-
-extern void gpio_init_4740(void);
-extern void sdram_init_4740(void);
-extern void pll_init_4740(void);
-
-extern void gpio_init_4760(void);
-extern void sdram_init_4760(void);
-extern void pll_init_4760(void);
-
 #endif 

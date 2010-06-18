@@ -19,7 +19,7 @@
  * Boston, MA  02110-1301, USA
  */
 
-#include "target/jz4750.h"
+#include "target/jz4760.h"
 #include "target/configs.h"
 #include "usb_boot_defines.h"
 
@@ -79,10 +79,10 @@ void do_debug()
 			serial_init();
 			sdram_init_4740();
 			break;
-		case 0x4750:
-			gpio_init_4750();
+		case 0x4760:
+			gpio_init_4760();
 			serial_init();
-			sdram_init_4750();
+			sdram_init_4760();
 			break;
 		default:
 			;

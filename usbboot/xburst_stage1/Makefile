@@ -18,7 +18,7 @@ CFLAGS	:= -O2 -fno-unit-at-a-time -fno-zero-initialized-in-bss -mips32 -fno-pic 
 	   -mno-abicalls -I$(INFLASH_SRC_PATH) -I$(XBURST_INCLUDE_PATH)
 LDFLAGS	:= -nostdlib -EL -T target.ld 
 
-OBJS	= head.o main.o common.o board_4740.o board_4750.o debug.o
+OBJS	= head.o main.o common.o board_4740.o board-jz4760.o debug.o
 
 all: xburst_stage1.bin
 

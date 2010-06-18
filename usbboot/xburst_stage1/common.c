@@ -85,7 +85,7 @@ void serial_init(void)
 	if ( CPU_ID == 0x4740 )
 		serial_setbrg_4740();
 	else
-		serial_setbrg_4750();
+		serial_setbrg_4760();
 
 	/* Enable UART unit, enable and clear FIFO */
 	*uart_fcr = UART_FCR_UUE | UART_FCR_FE | UART_FCR_TFLS | UART_FCR_RFLS;

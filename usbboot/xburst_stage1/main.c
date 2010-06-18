@@ -35,13 +35,13 @@ volatile u32 CFG_CPU_SPEED;
 volatile u32 CFG_EXTAL;
 volatile u8 PHM_DIV;
 volatile u8 IS_SHARE;
-extern int pllout2;
+
 #if 0
 void test_load_args(void)
 {
-	CPU_ID = 0x4740 ;
-	CFG_EXTAL = 12000000 ;
-	CFG_CPU_SPEED = 252000000 ;
+	CPU_ID = 0x4760;
+	CFG_EXTAL = 12000000;
+	CFG_CPU_SPEED = 252000000;
 	PHM_DIV = 3;
 	fw_args->use_uart = 0;
 	UART_BASE = UART0_BASE + fw_args->use_uart * 0x1000;
@@ -68,8 +68,6 @@ void load_args(void)
 		CFG_CPU_SPEED = 192000000;
 	}
 	PHM_DIV = fw_args->phm_div;
-	if (fw_args->use_uart > 3) 
-		fw_args->use_uart = 0;
 	UART_BASE = UART0_BASE + fw_args->use_uart * 0x1000;
 	CONFIG_BAUDRATE = fw_args->boudrate;
 	SDRAM_BW16 = fw_args->bus_width;
@@ -96,11 +94,12 @@ void c_main(void)
 		serial_init();
 		sdram_init_4740();
 		break;
-	case 0x4750:
-		gpio_init_4750();
-		pll_init_4750();
+	case 0x4760:
+		gpio_init_4760();
+		cpm_start_all_4760();
 		serial_init();
-		sdram_init_4750();
+		pll_init_4760();
+		sdram_init_4760();
 		break;
 	default:
 		return;
@@ -117,8 +116,13 @@ void c_main(void)
 	serial_put_hex(SDRAM_BANK4);
 	serial_put_hex(SDRAM_ROW);
 	serial_put_hex(SDRAM_COL);
-	serial_put_hex(pllout2);
 	serial_put_hex(REG_CPM_CPCCR);
 #endif
 	serial_puts("xburst stage1 run finish !\n");
+	if (CPU_ID == 0x4760) {
+		__asm__ (
+			"li  $31, 0xbfc012e0 \n\t"
+			"jr  $31 \n\t "
+			);
+	}
 }
