@@ -109,6 +109,7 @@ void init_cfg()
 	if (usb_send_data_to_ingenic(&ingenic_dev) != 1)
 		goto xout;
 
+	sleep(1);
 	if (usb_ingenic_configration(&ingenic_dev, DS_hand) != 1)
 		goto xout;
 
