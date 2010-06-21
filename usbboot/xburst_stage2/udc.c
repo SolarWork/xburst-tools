@@ -26,10 +26,10 @@
 #elif defined(LEPUS)
 #include "target/jz4760.h"
 #else
-	#error "Please Define JZ4740 or JZ4760"
+	#error "Please Define [NANONOTE] or [LEPUS]"
 #endif
 
-#define dprintf(x...)  serial_puts(x)
+#define dprintf(x...)		/* serial_puts(x) */
 #define TXFIFOEP0 USB_FIFO_EP0
 
 extern void serial_put_hex(int );

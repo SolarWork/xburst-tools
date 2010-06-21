@@ -53,7 +53,7 @@ void gpio_init_4760()
 		while(i--);
 	}
 #endif
-	__gpio_as_nand_16bit(1);
+	__gpio_as_nand_8bit(1);
 }
 
 #define MHZ (1000 * 1000)

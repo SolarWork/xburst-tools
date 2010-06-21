@@ -20,34 +20,7 @@
 
 #include "target/xburst_types.h"
 
-#if 1 /* if 0, for spl program */
-#if 0
-static inline void jz_flush_dcache(void)
-{
-	unsigned long start;
-	unsigned long end;
-
-	start = KSEG0;
-	end = start + CFG_DCACHE_SIZE;
-	while (start < end) {
-		cache_unroll(start,Index_Writeback_Inv_D);
-		start += CFG_CACHELINE_SIZE;
-	}
-}
-
-static inline void jz_flush_icache(void)
-{
-	unsigned long start;
-	unsigned long end;
-
-	start = KSEG0;
-	end = start + CFG_ICACHE_SIZE;
-	while(start < end) {
-		cache_unroll(start,Index_Invalidate_I);
-		start += CFG_CACHELINE_SIZE;
-	}
-}
-#endif
+#if 0 /* if 0, for spl program */
 #define cache_unroll(base,op)	        	\
 	__asm__ __volatile__("	         	\
 		.set noreorder;		        \
@@ -58,6 +31,33 @@ static inline void jz_flush_icache(void)
 		:				\
 		: "r" (base),			\
 		  "i" (op));
+
+static inline void jz_flush_dcache(void)
+{
+	unsigned long start;
+	unsigned long end;
+
+	start = KSEG0;
+	end = start + CONFIG_SYS_DCACHE_SIZE;
+	while (start < end) {
+		cache_unroll(start,Index_Writeback_Inv_D);
+		start += CONFIG_SYS_CACHELINE_SIZE;
+	}
+}
+
+static inline void jz_flush_icache(void)
+{
+	unsigned long start;
+	unsigned long end;
+
+	start = KSEG0;
+	end = start + CONFIG_SYS_ICACHE_SIZE;
+	while(start < end) {
+		cache_unroll(start,Index_Invalidate_I);
+		start += CONFIG_SYS_CACHELINE_SIZE;
+	}
+}
+#endif
 
 /* cpu pipeline flush */
 static inline void jz_sync(void)
@@ -91,11 +91,9 @@ static inline u16 jz_readw(u32 address)
 }
 
 static inline u32 jz_readl(u32 address)
-
 {
 	return *((volatile u32 *)address);
 }
-#endif
 
 //----------------------------------------------------------------------
 // Boot ROM Specification
@@ -145,6 +143,7 @@ static inline u32 jz_readl(u32 address)
 #define DMAC_BASE	0xB3420000
 #define UHC_BASE	0xB3430000
 #define UDC_BASE	0xB3440000
+#define BDMAC_BASE	0xB3450000
 #define GPS_BASE	0xB3480000
 #define ETHC_BASE	0xB34B0000
 #define BCH_BASE	0xB34D0000
@@ -646,13 +645,21 @@ static inline u32 jz_readl(u32 address)
 #define TCU_TDHR5	(TCU_BASE + 0x94)
 #define TCU_TCNT5	(TCU_BASE + 0x98)
 #define TCU_TCSR5	(TCU_BASE + 0x9C)
+#define TCU_TDFR6	(TCU_BASE + 0xA0)
+#define TCU_TDHR6	(TCU_BASE + 0xA4)
+#define TCU_TCNT6	(TCU_BASE + 0xA8)
+#define TCU_TCSR6	(TCU_BASE + 0xAC)
+#define TCU_TDFR7	(TCU_BASE + 0xB0)
+#define TCU_TDHR7	(TCU_BASE + 0xB4)
+#define TCU_TCNT7	(TCU_BASE + 0xB8)
+#define TCU_TCSR7	(TCU_BASE + 0xBC)
 
 #define REG_TCU_TSR	REG32(TCU_TSR)
 #define REG_TCU_TSSR	REG32(TCU_TSSR)
 #define REG_TCU_TSCR	REG32(TCU_TSCR)
-#define REG_TCU_TER	REG8(TCU_TER)
-#define REG_TCU_TESR	REG8(TCU_TESR)
-#define REG_TCU_TECR	REG8(TCU_TECR)
+#define REG_TCU_TER	REG16(TCU_TER)
+#define REG_TCU_TESR	REG16(TCU_TESR)
+#define REG_TCU_TECR	REG16(TCU_TECR)
 #define REG_TCU_TFR	REG32(TCU_TFR)
 #define REG_TCU_TFSR	REG32(TCU_TFSR)
 #define REG_TCU_TFCR	REG32(TCU_TFCR)
@@ -679,8 +686,20 @@ static inline u32 jz_readl(u32 address)
 #define REG_TCU_TDHR4	REG16(TCU_TDHR4)
 #define REG_TCU_TCNT4	REG16(TCU_TCNT4)
 #define REG_TCU_TCSR4	REG16(TCU_TCSR4)
+#define REG_TCU_TDFR5	REG16(TCU_TDFR5)
+#define REG_TCU_TDHR5	REG16(TCU_TDHR5)
+#define REG_TCU_TCNT5	REG16(TCU_TCNT5)
+#define REG_TCU_TCSR5	REG16(TCU_TCSR5)
+#define REG_TCU_TDFR6	REG16(TCU_TDFR6)
+#define REG_TCU_TDHR6	REG16(TCU_TDHR6)
+#define REG_TCU_TCNT6	REG16(TCU_TCNT6)
+#define REG_TCU_TCSR6	REG16(TCU_TCSR6)
+#define REG_TCU_TDFR7	REG16(TCU_TDFR7)
+#define REG_TCU_TDHR7	REG16(TCU_TDHR7)
+#define REG_TCU_TCNT7	REG16(TCU_TCNT7)
+#define REG_TCU_TCSR7	REG16(TCU_TCSR7)
 
-// n = 0,1,2,3,4,5
+// n = 0,1,2,3,4,5,6,7
 #define TCU_TDFR(n)	(TCU_BASE + (0x40 + (n)*0x10)) /* Timer Data Full Reg */
 #define TCU_TDHR(n)	(TCU_BASE + (0x44 + (n)*0x10)) /* Timer Data Half Reg */
 #define TCU_TCNT(n)	(TCU_BASE + (0x48 + (n)*0x10)) /* Timer Counter Reg */
@@ -692,6 +711,21 @@ static inline u32 jz_readl(u32 address)
 #define REG_TCU_TCSR(n)	REG16(TCU_TCSR((n)))
 
 // Register definitions
+#define TCU_TSTR_REAL2		(1 << 18)
+#define TCU_TSTR_REAL1		(1 << 17)
+#define TCU_TSTR_BUSY2		(1 << 2)
+#define TCU_TSTR_BUSY1		(1 << 1)
+
+#define TCU_TSTSR_REAL2		(1 << 18)
+#define TCU_TSTSR_REAL1		(1 << 17)
+#define TCU_TSTSR_BUSY2		(1 << 2)
+#define TCU_TSTSR_BUSY1		(1 << 1)
+
+#define TCU_TSTCR_REAL2		(1 << 18)
+#define TCU_TSTCR_REAL1		(1 << 17)
+#define TCU_TSTCR_BUSY2		(1 << 2)
+#define TCU_TSTCR_BUSY1		(1 << 1)
+
 #define TCU_TCSR_PWM_SD		(1 << 9)
 #define TCU_TCSR_PWM_INITL_HIGH	(1 << 8)
 #define TCU_TCSR_PWM_EN		(1 << 7)
@@ -707,6 +741,9 @@ static inline u32 jz_readl(u32 address)
 #define TCU_TCSR_RTC_EN		(1 << 1)
 #define TCU_TCSR_PCK_EN		(1 << 0)
 
+#define TCU_TER_OSTEN		(1 << 15)
+#define TCU_TER_TCEN7		(1 << 7)
+#define TCU_TER_TCEN6		(1 << 6)
 #define TCU_TER_TCEN5		(1 << 5)
 #define TCU_TER_TCEN4		(1 << 4)
 #define TCU_TER_TCEN3		(1 << 3)
@@ -714,6 +751,9 @@ static inline u32 jz_readl(u32 address)
 #define TCU_TER_TCEN1		(1 << 1)
 #define TCU_TER_TCEN0		(1 << 0)
 
+#define TCU_TESR_OSTEN		(1 << 15)
+#define TCU_TESR_TCEN7		(1 << 7)
+#define TCU_TESR_TCEN6		(1 << 6)
 #define TCU_TESR_TCST5		(1 << 5)
 #define TCU_TESR_TCST4		(1 << 4)
 #define TCU_TESR_TCST3		(1 << 3)
@@ -721,6 +761,9 @@ static inline u32 jz_readl(u32 address)
 #define TCU_TESR_TCST1		(1 << 1)
 #define TCU_TESR_TCST0		(1 << 0)
 
+#define TCU_TECR_OSTEN		(1 << 15)
+#define TCU_TECR_TCEN7		(1 << 7)
+#define TCU_TECR_TCEN6		(1 << 6)
 #define TCU_TECR_TCCL5		(1 << 5)
 #define TCU_TECR_TCCL4		(1 << 4)
 #define TCU_TECR_TCCL3		(1 << 3)
@@ -728,12 +771,17 @@ static inline u32 jz_readl(u32 address)
 #define TCU_TECR_TCCL1		(1 << 1)
 #define TCU_TECR_TCCL0		(1 << 0)
 
+#define TCU_TFR_HFLAG7		(1 << 23)
+#define TCU_TFR_HFLAG6		(1 << 22)
 #define TCU_TFR_HFLAG5		(1 << 21)
 #define TCU_TFR_HFLAG4		(1 << 20)
 #define TCU_TFR_HFLAG3		(1 << 19)
 #define TCU_TFR_HFLAG2		(1 << 18)
 #define TCU_TFR_HFLAG1		(1 << 17)
 #define TCU_TFR_HFLAG0		(1 << 16)
+#define TCU_TFR_FLAGOST		(1 << 15)
+#define TCU_TFR_FFLAG7		(1 << 7)
+#define TCU_TFR_FFLAG6		(1 << 6)
 #define TCU_TFR_FFLAG5		(1 << 5)
 #define TCU_TFR_FFLAG4		(1 << 4)
 #define TCU_TFR_FFLAG3		(1 << 3)
@@ -741,12 +789,17 @@ static inline u32 jz_readl(u32 address)
 #define TCU_TFR_FFLAG1		(1 << 1)
 #define TCU_TFR_FFLAG0		(1 << 0)
 
+#define TCU_TFSR_HFLAG7		(1 << 23)
+#define TCU_TFSR_HFLAG6		(1 << 22)
 #define TCU_TFSR_HFLAG5		(1 << 21)
 #define TCU_TFSR_HFLAG4		(1 << 20)
 #define TCU_TFSR_HFLAG3		(1 << 19)
 #define TCU_TFSR_HFLAG2		(1 << 18)
 #define TCU_TFSR_HFLAG1		(1 << 17)
 #define TCU_TFSR_HFLAG0		(1 << 16)
+#define TCU_TFSR_FLAGOST	(1 << 15)
+#define TCU_TFSR_FFLAG7		(1 << 7)
+#define TCU_TFSR_FFLAG6		(1 << 6)
 #define TCU_TFSR_FFLAG5		(1 << 5)
 #define TCU_TFSR_FFLAG4		(1 << 4)
 #define TCU_TFSR_FFLAG3		(1 << 3)
@@ -754,12 +807,17 @@ static inline u32 jz_readl(u32 address)
 #define TCU_TFSR_FFLAG1		(1 << 1)
 #define TCU_TFSR_FFLAG0		(1 << 0)
 
+#define TCU_TFCR_HFLAG7		(1 << 23)
+#define TCU_TFCR_HFLAG6		(1 << 22)
 #define TCU_TFCR_HFLAG5		(1 << 21)
 #define TCU_TFCR_HFLAG4		(1 << 20)
 #define TCU_TFCR_HFLAG3		(1 << 19)
 #define TCU_TFCR_HFLAG2		(1 << 18)
 #define TCU_TFCR_HFLAG1		(1 << 17)
 #define TCU_TFCR_HFLAG0		(1 << 16)
+#define TCU_TFCR_FLAGOST	(1 << 15)
+#define TCU_TFCR_FFLAG7		(1 << 7)
+#define TCU_TFCR_FFLAG6		(1 << 6)
 #define TCU_TFCR_FFLAG5		(1 << 5)
 #define TCU_TFCR_FFLAG4		(1 << 4)
 #define TCU_TFCR_FFLAG3		(1 << 3)
@@ -767,12 +825,17 @@ static inline u32 jz_readl(u32 address)
 #define TCU_TFCR_FFLAG1		(1 << 1)
 #define TCU_TFCR_FFLAG0		(1 << 0)
 
+#define TCU_TMR_HMASK7		(1 << 23)
+#define TCU_TMR_HMASK6		(1 << 22)
 #define TCU_TMR_HMASK5		(1 << 21)
 #define TCU_TMR_HMASK4		(1 << 20)
 #define TCU_TMR_HMASK3		(1 << 19)
 #define TCU_TMR_HMASK2		(1 << 18)
 #define TCU_TMR_HMASK1		(1 << 17)
 #define TCU_TMR_HMASK0		(1 << 16)
+#define TCU_TMR_MASKOST	        (1 << 15)
+#define TCU_TMR_FMASK7		(1 << 7)
+#define TCU_TMR_FMASK6		(1 << 6)
 #define TCU_TMR_FMASK5		(1 << 5)
 #define TCU_TMR_FMASK4		(1 << 4)
 #define TCU_TMR_FMASK3		(1 << 3)
@@ -780,12 +843,17 @@ static inline u32 jz_readl(u32 address)
 #define TCU_TMR_FMASK1		(1 << 1)
 #define TCU_TMR_FMASK0		(1 << 0)
 
+#define TCU_TMSR_HMST7		(1 << 23)
+#define TCU_TMSR_HMST6		(1 << 22)
 #define TCU_TMSR_HMST5		(1 << 21)
 #define TCU_TMSR_HMST4		(1 << 20)
 #define TCU_TMSR_HMST3		(1 << 19)
 #define TCU_TMSR_HMST2		(1 << 18)
 #define TCU_TMSR_HMST1		(1 << 17)
 #define TCU_TMSR_HMST0		(1 << 16)
+#define TCU_TMSR_MSTOST	        (1 << 15)
+#define TCU_TMSR_FMST7		(1 << 7)
+#define TCU_TMSR_FMST6		(1 << 6)
 #define TCU_TMSR_FMST5		(1 << 5)
 #define TCU_TMSR_FMST4		(1 << 4)
 #define TCU_TMSR_FMST3		(1 << 3)
@@ -793,12 +861,17 @@ static inline u32 jz_readl(u32 address)
 #define TCU_TMSR_FMST1		(1 << 1)
 #define TCU_TMSR_FMST0		(1 << 0)
 
+#define TCU_TMCR_HMCL7		(1 << 23)
+#define TCU_TMCR_HMCL6		(1 << 22)
 #define TCU_TMCR_HMCL5		(1 << 21)
 #define TCU_TMCR_HMCL4		(1 << 20)
 #define TCU_TMCR_HMCL3		(1 << 19)
 #define TCU_TMCR_HMCL2		(1 << 18)
 #define TCU_TMCR_HMCL1		(1 << 17)
 #define TCU_TMCR_HMCL0		(1 << 16)
+#define TCU_TMCR_MCLOST	        (1 << 15)
+#define TCU_TMCR_FMCL7		(1 << 7)
+#define TCU_TMCR_FMCL6		(1 << 6)
 #define TCU_TMCR_FMCL5		(1 << 5)
 #define TCU_TMCR_FMCL4		(1 << 4)
 #define TCU_TMCR_FMCL3		(1 << 3)
@@ -807,6 +880,9 @@ static inline u32 jz_readl(u32 address)
 #define TCU_TMCR_FMCL0		(1 << 0)
 
 #define TCU_TSR_WDTS		(1 << 16)
+#define TCU_TSR_OST		(1 << 15)
+#define TCU_TSR_STOP7		(1 << 7)
+#define TCU_TSR_STOP6		(1 << 6)
 #define TCU_TSR_STOP5		(1 << 5)
 #define TCU_TSR_STOP4		(1 << 4)
 #define TCU_TSR_STOP3		(1 << 3)
@@ -814,7 +890,10 @@ static inline u32 jz_readl(u32 address)
 #define TCU_TSR_STOP1		(1 << 1)
 #define TCU_TSR_STOP0		(1 << 0)
 
-#define TCU_TSSR_WDTSS		(1 << 16)
+#define TCU_TSSR_WDTSC		(1 << 16)
+#define TCU_TSSR_OST		(1 << 15)
+#define TCU_TSSR_STPS7		(1 << 7)
+#define TCU_TSSR_STPS6		(1 << 6)
 #define TCU_TSSR_STPS5		(1 << 5)
 #define TCU_TSSR_STPS4		(1 << 4)
 #define TCU_TSSR_STPS3		(1 << 3)
@@ -822,13 +901,16 @@ static inline u32 jz_readl(u32 address)
 #define TCU_TSSR_STPS1		(1 << 1)
 #define TCU_TSSR_STPS0		(1 << 0)
 
-#define TCU_TSSR_WDTSC		(1 << 16)
-#define TCU_TSSR_STPC5		(1 << 5)
-#define TCU_TSSR_STPC4		(1 << 4)
-#define TCU_TSSR_STPC3		(1 << 3)
-#define TCU_TSSR_STPC2		(1 << 2)
-#define TCU_TSSR_STPC1		(1 << 1)
-#define TCU_TSSR_STPC0		(1 << 0)
+#define TCU_TSCR_WDTSC		(1 << 16)
+#define TCU_TSCR_OST		(1 << 15)
+#define TCU_TSCR_STPS7		(1 << 7)
+#define TCU_TSCR_STPS6		(1 << 6)
+#define TCU_TSCR_STPS5		(1 << 5)
+#define TCU_TSCR_STPS4		(1 << 4)
+#define TCU_TSCR_STPS3		(1 << 3)
+#define TCU_TSCR_STPS2		(1 << 2)
+#define TCU_TSCR_STPS1		(1 << 1)
+#define TCU_TSCR_STPS0		(1 << 0)
 
 
 /*************************************************************************
@@ -858,6 +940,31 @@ static inline u32 jz_readl(u32 address)
 #define WDT_TCSR_PCK_EN		(1 << 0)
 
 #define WDT_TCER_TCEN		(1 << 0)
+
+/*************************************************************************
+ * OST (Operation System Timer)
+ *************************************************************************/
+#define OST_DR		(OST_BASE + 0xE0)
+#define OST_CNT	        (OST_BASE + 0xE8)
+#define OST_CSR	        (OST_BASE + 0xEC)
+
+#define REG_OST_DR	REG32(OST_DR)
+#define REG_OST_CNT	REG32(OST_CNT)
+#define REG_OST_CSR	REG16(OST_CSR)
+
+#define OST_CSR_CNT_MD		(1 << 15)
+#define OST_CSR_PWM_SD		(1 << 9)
+#define OST_CSR_PRESCALE_BIT	3
+#define OST_CSR_PRESCALE_MASK	(0x7 << OST_CSR_PRESCALE_BIT)
+  #define OST_CSR_PRESCALE1	(0x0 << OST_CSR_PRESCALE_BIT)
+  #define OST_CSR_PRESCALE4	(0x1 << OST_CSR_PRESCALE_BIT)
+  #define OST_CSR_PRESCALE16	(0x2 << OST_CSR_PRESCALE_BIT)
+  #define OST_CSR_PRESCALE64	(0x3 << OST_CSR_PRESCALE_BIT)
+  #define OST_CSR_PRESCALE256	(0x4 << OST_CSR_PRESCALE_BIT)
+  #define OST_CSR_PRESCALE1024	(0x5 << OST_CSR_PRESCALE_BIT)
+#define OST_CSR_EXT_EN		(1 << 2)
+#define OST_CSR_RTC_EN		(1 << 1)
+#define OST_CSR_PCK_EN		(1 << 0)
 
 /*************************************************************************
  * MDMAC (MEM Copy DMA Controller)
@@ -897,6 +1004,266 @@ static inline u32 jz_readl(u32 address)
 #define REG_MDMAC_DMACKE     	REG32(MDMAC_DMACKE)
 
 
+/***************************************************************************
+ * BCH & NAND DMAC
+ ***************************************************************************/
+/* n is the DMA channel index (0 - 2) */
+#define BDMAC_DSAR(n)		(BDMAC_BASE + (0x00 + (n) * 0x20)) /* DMA source address */
+#define BDMAC_DTAR(n)  		(BDMAC_BASE + (0x04 + (n) * 0x20)) /* DMA target address */
+#define BDMAC_DTCR(n)  		(BDMAC_BASE + (0x08 + (n) * 0x20)) /* DMA transfer count */
+#define BDMAC_DRSR(n)  		(BDMAC_BASE + (0x0c + (n) * 0x20)) /* DMA request source */
+#define BDMAC_DCCSR(n) 		(BDMAC_BASE + (0x10 + (n) * 0x20)) /* DMA control/status */
+#define BDMAC_DCMD(n)  		(BDMAC_BASE + (0x14 + (n) * 0x20)) /* DMA command */
+#define BDMAC_DDA(n)   		(BDMAC_BASE + (0x18 + (n) * 0x20)) /* DMA descriptor address */
+#define BDMAC_DSD(n)   		(BDMAC_BASE + (0x1c + (n) * 0x20)) /* DMA Stride Address */
+#define BDMAC_DNT(n)  		(BDMAC_BASE + (0xc0 + (n) * 0x04)) /* NAND Detect Timer */
+
+#define BDMAC_DMACR			(BDMAC_BASE + 0x0300) 	/* DMA control register */
+#define BDMAC_DMAIPR		(BDMAC_BASE + 0x0304) 	/* DMA interrupt pending */
+#define BDMAC_DMADBR		(BDMAC_BASE + 0x0308) 	/* DMA doorbell */
+#define BDMAC_DMADBSR		(BDMAC_BASE + 0x030C) 	/* DMA doorbell set */
+#define BDMAC_DMACKE  		(BDMAC_BASE + 0x0310)
+
+#define REG_BDMAC_DSAR(n)	REG32(BDMAC_DSAR((n)))
+#define REG_BDMAC_DTAR(n)	REG32(BDMAC_DTAR((n)))
+#define REG_BDMAC_DTCR(n)	REG32(BDMAC_DTCR((n)))
+#define REG_BDMAC_DRSR(n)	REG32(BDMAC_DRSR((n)))
+#define REG_BDMAC_DCCSR(n)	REG32(BDMAC_DCCSR((n)))
+#define REG_BDMAC_DCMD(n)	REG32(BDMAC_DCMD((n)))
+#define REG_BDMAC_DDA(n)	REG32(BDMAC_DDA((n)))
+#define REG_BDMAC_DSD(n)    REG32(BDMAC_DSD(n))
+#define REG_BDMAC_DNT(n)	REG32(BDMAC_DNT(n))
+
+#define REG_BDMAC_DMACR		REG32(BDMAC_DMACR)
+#define REG_BDMAC_DMAIPR	REG32(BDMAC_DMAIPR)
+#define REG_BDMAC_DMADBR	REG32(BDMAC_DMADBR)
+#define REG_BDMAC_DMADBSR	REG32(BDMAC_DMADBSR)
+#define REG_BDMAC_DMACKE    REG32(BDMAC_DMACKE)
+
+// BDMA request source register
+#define BDMAC_DRSR_RS_BIT	0
+  #define BDMAC_DRSR_RS_MASK	(0x3f << DMAC_DRSR_RS_BIT)
+  #define BDMAC_DRSR_RS_NAND	(1 << DMAC_DRSR_RS_BIT)
+  #define BDMAC_DRSR_RS_BCH_ENC	(2 << DMAC_DRSR_RS_BIT)
+  #define BDMAC_DRSR_RS_BCH_DEC	(3 << DMAC_DRSR_RS_BIT)
+  #define BDMAC_DRSR_RS_AUTO	(8 << DMAC_DRSR_RS_BIT)
+  #define BDMAC_DRSR_RS_EXT	(12 << DMAC_DRSR_RS_BIT)
+
+// BDMA channel control/status register
+#define BDMAC_DCCSR_NDES	(1 << 31) /* descriptor (0) or not (1) ? */
+#define BDMAC_DCCSR_DES8    	(1 << 30) /* Descriptor 8 Word */
+#define BDMAC_DCCSR_DES4    	(0 << 30) /* Descriptor 4 Word */
+#define BDMAC_DCCSR_CDOA_BIT	16        /* copy of DMA offset address */
+  #define BDMAC_DCCSR_CDOA_MASK	(0xff << BDMACC_DCCSR_CDOA_BIT)
+#define BDMAC_DCCSR_BERR	(1 << 7)  /* BCH error within this transfer, Only for channel 0 */
+#define BDMAC_DCCSR_AR		(1 << 4)  /* address error */
+#define BDMAC_DCCSR_TT		(1 << 3)  /* transfer terminated */
+#define BDMAC_DCCSR_HLT		(1 << 2)  /* DMA halted */
+#define BDMAC_DCCSR_EN		(1 << 0)  /* channel enable bit */
+
+// BDMA channel command register
+#define BDMAC_DCMD_EACKS_LOW  	(1 << 31) /* External DACK Output Level Select, active low */
+#define BDMAC_DCMD_EACKS_HIGH  	(0 << 31) /* External DACK Output Level Select, active high */
+#define BDMAC_DCMD_EACKM_WRITE 	(1 << 30) /* External DACK Output Mode Select, output in write cycle */
+#define BDMAC_DCMD_EACKM_READ 	(0 << 30) /* External DACK Output Mode Select, output in read cycle */
+#define BDMAC_DCMD_ERDM_BIT	28        /* External DREQ Detection Mode Select */
+  #define BDMAC_DCMD_ERDM_MASK	(0x03 << BDMAC_DCMD_ERDM_BIT)
+  #define BDMAC_DCMD_ERDM_LOW	(0 << BDMAC_DCMD_ERDM_BIT)
+  #define BDMAC_DCMD_ERDM_FALL	(1 << BDMAC_DCMD_ERDM_BIT)
+  #define BDMAC_DCMD_ERDM_HIGH	(2 << BDMAC_DCMD_ERDM_BIT)
+  #define BDMAC_DCMD_ERDM_RISE	(3 << BDMAC_DCMD_ERDM_BIT)
+#define BDMAC_DCMD_BLAST	(1 << 25) /* BCH last */
+#define BDMAC_DCMD_SAI		(1 << 23) /* source address increment */
+#define BDMAC_DCMD_DAI		(1 << 22) /* dest address increment */
+#define BDMAC_DCMD_SWDH_BIT	14  /* source port width */
+  #define BDMAC_DCMD_SWDH_MASK	(0x03 << BDMAC_DCMD_SWDH_BIT)
+  #define BDMAC_DCMD_SWDH_32	(0 << BDMAC_DCMD_SWDH_BIT)
+  #define BDMAC_DCMD_SWDH_8	(1 << BDMAC_DCMD_SWDH_BIT)
+  #define BDMAC_DCMD_SWDH_16	(2 << BDMAC_DCMD_SWDH_BIT)
+#define BDMAC_DCMD_DWDH_BIT	12  /* dest port width */
+  #define BDMAC_DCMD_DWDH_MASK	(0x03 << BDMAC_DCMD_DWDH_BIT)
+  #define BDMAC_DCMD_DWDH_32	(0 << BDMAC_DCMD_DWDH_BIT)
+  #define BDMAC_DCMD_DWDH_8	(1 << BDMAC_DCMD_DWDH_BIT)
+  #define BDMAC_DCMD_DWDH_16	(2 << BDMAC_DCMD_DWDH_BIT)
+#define BDMAC_DCMD_DS_BIT	8  /* transfer data size of a data unit */
+  #define BDMAC_DCMD_DS_MASK	(0x07 << BDMAC_DCMD_DS_BIT)
+  #define BDMAC_DCMD_DS_32BIT	(0 << BDMAC_DCMD_DS_BIT)
+  #define BDMAC_DCMD_DS_8BIT	(1 << BDMAC_DCMD_DS_BIT)
+  #define BDMAC_DCMD_DS_16BIT	(2 << BDMAC_DCMD_DS_BIT)
+  #define BDMAC_DCMD_DS_16BYTE	(3 << BDMAC_DCMD_DS_BIT)
+  #define BDMAC_DCMD_DS_32BYTE	(4 << BDMAC_DCMD_DS_BIT)
+  #define BDMAC_DCMD_DS_64BYTE	(5 << BDMAC_DCMD_DS_BIT)
+#define BDMAC_DCMD_NRD   	(1 << 7)  /* NAND direct read */
+#define BDMAC_DCMD_NWR   	(1 << 6)  /* NAND direct write */
+#define BDMAC_DCMD_NAC   	(1 << 5)  /* NAND AL/CL enable */
+#define BDMAC_DCMD_STDE   	(1 << 2)  /* Stride Disable/Enable */
+#define BDMAC_DCMD_TIE		(1 << 1)  /* DMA transfer interrupt enable */
+#define BDMAC_DCMD_LINK		(1 << 0)  /* descriptor link enable */
+
+// BDMA descriptor address register
+#define BDMAC_DDA_BASE_BIT	12  /* descriptor base address */
+  #define BDMAC_DDA_BASE_MASK	(0x0fffff << BDMAC_DDA_BASE_BIT)
+#define BDMAC_DDA_OFFSET_BIT	4   /* descriptor offset address */
+  #define BDMAC_DDA_OFFSET_MASK	(0x0ff << BDMAC_DDA_OFFSET_BIT)
+
+// BDMA stride address register
+#define BDMAC_DSD_TSD_BIT	16	/* target stride address */
+  #define BDMAC_DSD_TSD_MASK	(0xffff << BDMAC_DSD_TSD_BIT)
+#define BDMAC_DSD_SSD_BIT	0	/* source stride address */
+  #define BDMAC_DSD_SSD_MASK	(0xffff << BDMAC_DSD_SSD_BIT)
+
+// BDMA NAND Detect timer register
+#define BDMAC_NDTCTIMER_EN	(1 << 15)  /* enable detect timer */
+#define BDMAC_TAILCNT_BIT	16
+
+// BDMA control register
+#define BDMAC_DMACR_PR_BIT	8	/* channel priority mode */
+  #define BDMAC_DMACR_PR_MASK	(0x03 << DMAC_DMACR_PR_BIT)
+  #define BDMAC_DMACR_PR_01_2	(0 << BDMAC_DMACR_PR_BIT)
+  #define BDMAC_DMACR_PR_12_0	(1 << BDMAC_DMACR_PR_BIT)
+  #define BDMAC_DMACR_PR_20_1	(2 << BDMAC_DMACR_PR_BIT)
+  #define BDMAC_DMACR_PR_012	(3 << BDMAC_DMACR_PR_BIT)
+#define BDMAC_DMACR_HLT		(1 << 3)  /* DMA halt flag */
+#define BDMAC_DMACR_AR		(1 << 2)  /* address error flag */
+#define BDMAC_DMACR_DMAE	(1 << 0)  /* DMA enable bit */
+
+// BDMA interrupt pending register
+#define BDMAC_DMAIPR_CIRQ2	(1 << 2)  /* irq pending status for channel 2 */
+#define BDMAC_DMAIPR_CIRQ1	(1 << 1)  /* irq pending status for channel 1 */
+#define BDMAC_DMAIPR_CIRQ0	(1 << 0)  /* irq pending status for channel 0 */
+
+// BDMA doorbell register
+#define BDMAC_DMADBR_DB2	(1 << 2)  /* doorbell for channel 2 */
+#define BDMAC_DMADBR_DB1	(1 << 1)  /* doorbell for channel 1 */
+#define BDMAC_DMADBR_DB0	(1 << 0)  /* doorbell for channel 0 */
+
+// BDMA doorbell set register
+#define BDMAC_DMADBSR_DBS2	(1 << 2)  /* enable doorbell for channel 2 */
+#define BDMAC_DMADBSR_DBS1	(1 << 1)  /* enable doorbell for channel 1 */
+#define BDMAC_DMADBSR_DBS0	(1 << 0)  /* enable doorbell for channel 0 */
+
+/* n is the DMA channel index (0 - 2) */
+
+#define __bdmac_test_halt_error ( REG_BDMAC_DMACR & BDMAC_DMACR_HLT )
+#define __bdmac_test_addr_error ( REG_BDMAC_DMACR & BDMAC_DMACR_AR )
+
+#define __bdmac_channel_enable_clk(n)           \
+	REG_BDMAC_DMACKE |= 1 << (n);
+
+#define __bdmac_enable_descriptor(n) \
+  ( REG_BDMAC_DCCSR((n)) &= ~BDMAC_DCCSR_NDES )
+#define __bdmac_disable_descriptor(n) \
+  ( REG_BDMAC_DCCSR((n)) |= BDMAC_DCCSR_NDES )
+
+#define __bdmac_enable_channel(n)                 \
+do {                                             \
+	REG_BDMAC_DCCSR((n)) |= BDMAC_DCCSR_EN;    \
+} while (0)
+#define __bdmac_disable_channel(n)                \
+do {                                             \
+	REG_BDMAC_DCCSR((n)) &= ~BDMAC_DCCSR_EN;   \
+} while (0)
+
+#define __bdmac_channel_enable_irq(n) \
+  ( REG_BDMAC_DCMD((n)) |= BDMAC_DCMD_TIE )
+#define __bdmac_channel_disable_irq(n) \
+  ( REG_BDMAC_DCMD((n)) &= ~BDMAC_DCMD_TIE )
+
+#define __bdmac_channel_transmit_halt_detected(n) \
+  (  REG_BDMAC_DCCSR((n)) & BDMAC_DCCSR_HLT )
+#define __bdmac_channel_transmit_end_detected(n) \
+  (  REG_BDMAC_DCCSR((n)) & BDMAC_DCCSR_TT )
+#define __bdmac_channel_address_error_detected(n) \
+  (  REG_BDMAC_DCCSR((n)) & BDMAC_DCCSR_AR )
+#define __bdmac_channel_count_terminated_detected(n) \
+  (  REG_BDMAC_DCCSR((n)) & BDMAC_DCCSR_CT )
+#define __bdmac_channel_descriptor_invalid_detected(n) \
+  (  REG_BDMAC_DCCSR((n)) & BDMAC_DCCSR_INV )
+#define __bdmac_BCH_error_detected(n) \
+  (  REG_BDMAC_DCCSR((n)) & BDMAC_DCCSR_BERR )
+
+#define __bdmac_channel_clear_transmit_halt(n)				\
+	do {								\
+		/* clear both channel halt error and globle halt error */ \
+		REG_BDMAC_DCCSR(n) &= ~BDMAC_DCCSR_HLT;			\
+		REG_BDMAC_DMACR &= ~BDMAC_DMACR_HLT;	\
+	} while (0)
+#define __bdmac_channel_clear_transmit_end(n) \
+  (  REG_BDMAC_DCCSR(n) &= ~BDMAC_DCCSR_TT )
+#define __bdmac_channel_clear_address_error(n)				\
+	do {								\
+		REG_BDMAC_DDA(n) = 0; /* clear descriptor address register */ \
+		REG_BDMAC_DSAR(n) = 0; /* clear source address register */ \
+		REG_BDMAC_DTAR(n) = 0; /* clear target address register */ \
+		/* clear both channel addr error and globle address error */ \
+		REG_BDMAC_DCCSR(n) &= ~BDMAC_DCCSR_AR;			\
+		REG_BDMAC_DMACR &= ~BDMAC_DMACR_AR;	\
+	} while (0)
+#define __bdmac_channel_clear_count_terminated(n) \
+  (  REG_BDMAC_DCCSR((n)) &= ~BDMAC_DCCSR_CT )
+#define __bdmac_channel_clear_descriptor_invalid(n) \
+  (  REG_BDMAC_DCCSR((n)) &= ~BDMAC_DCCSR_INV )
+
+#define __bdmac_channel_set_transfer_unit_32bit(n)	\
+do {							\
+	REG_BDMAC_DCMD((n)) &= ~BDMAC_DCMD_DS_MASK;	\
+	REG_BDMAC_DCMD((n)) |= BDMAC_DCMD_DS_32BIT;	\
+} while (0)
+
+#define __bdmac_channel_set_transfer_unit_16bit(n)	\
+do {							\
+	REG_BDMAC_DCMD((n)) &= ~BDMAC_DCMD_DS_MASK;	\
+	REG_BDMAC_DCMD((n)) |= BDMAC_DCMD_DS_16BIT;	\
+} while (0)
+
+#define __bdmac_channel_set_transfer_unit_8bit(n)	\
+do {							\
+	REG_BDMAC_DCMD((n)) &= ~BDMAC_DCMD_DS_MASK;	\
+	REG_BDMAC_DCMD((n)) |= BDMAC_DCMD_DS_8BIT;	\
+} while (0)
+
+#define __bdmac_channel_set_transfer_unit_16byte(n)	\
+do {							\
+	REG_BDMAC_DCMD((n)) &= ~BDMAC_DCMD_DS_MASK;	\
+	REG_BDMAC_DCMD((n)) |= BDMAC_DCMD_DS_16BYTE;	\
+} while (0)
+
+#define __bdmac_channel_set_transfer_unit_32byte(n)	\
+do {							\
+	REG_BDMAC_DCMD((n)) &= ~BDMAC_DCMD_DS_MASK;	\
+	REG_BDMAC_DCMD((n)) |= BDMAC_DCMD_DS_32BYTE;	\
+} while (0)
+
+/* w=8,16,32 */
+#define __bdmac_channel_set_dest_port_width(n,w)		\
+do {							\
+	REG_BDMAC_DCMD((n)) &= ~BDMAC_DCMD_DWDH_MASK;	\
+	REG_BDMAC_DCMD((n)) |= BDMAC_DCMD_DWDH_##w;	\
+} while (0)
+
+/* w=8,16,32 */
+#define __bdmac_channel_set_src_port_width(n,w)		\
+do {							\
+	REG_BDMAC_DCMD((n)) &= ~BDMAC_DCMD_SWDH_MASK;	\
+	REG_BDMAC_DCMD((n)) |= BDMAC_DCMD_SWDH_##w;	\
+} while (0)
+
+#define __bdmac_channel_dest_addr_fixed(n) \
+	(REG_BDMAC_DCMD((n)) &= ~BDMAC_DCMD_DAI)
+#define __bdmac_channel_dest_addr_increment(n) \
+	(REG_BDMAC_DCMD((n)) |= BDMAC_DCMD_DAI)
+
+#define __bdmac_channel_src_addr_fixed(n) \
+	(REG_BDMAC_DCMD((n)) &= ~BDMAC_DCMD_SAI)
+#define __bdmac_channel_src_addr_increment(n) \
+	(REG_BDMAC_DCMD((n)) |= BDMAC_DCMD_SAI)
+
+#define __bdmac_channel_set_doorbell(n)	\
+	(REG_BDMAC_DMADBSR = (1 << (n)))
+
+#define __bdmac_channel_irq_detected(n)  (REG_BDMAC_DMAIPR & (1 << (n)))
+#define __bdmac_channel_ack_irq(n)       (REG_BDMAC_DMAIPR &= ~(1 <<(n)))
+
 /*************************************************************************
  * DMAC (DMA Controller)
  *************************************************************************/
@@ -915,11 +1282,12 @@ static inline u32 jz_readl(u32 address)
 #define DMAC_DDA(n)   (DMAC_BASE + ((n)/HALF_DMA_NUM*0x100 + 0x18 + ((n)-(n)/HALF_DMA_NUM*HALF_DMA_NUM) * 0x20)) /* DMA descriptor address */
 #define DMAC_DSD(n)   (DMAC_BASE + ((n)/HALF_DMA_NUM*0x100 + 0xc0 + ((n)-(n)/HALF_DMA_NUM*HALF_DMA_NUM) * 0x04)) /* DMA Stride Address */
 
-#define DMAC_DMACR(m)	(DMAC_BASE + 0x0300 + 0x100 * m)              /* DMA control register */
-#define DMAC_DMAIPR(m)	(DMAC_BASE + 0x0304 + 0x100 * m)              /* DMA interrupt pending */
-#define DMAC_DMADBR(m)	(DMAC_BASE + 0x0308 + 0x100 * m)              /* DMA doorbell */
-#define DMAC_DMADBSR(m)	(DMAC_BASE + 0x030C + 0x100 * m)              /* DMA doorbell set */
-#define DMAC_DMADCKE(m)	(DMAC_BASE + 0x0310 + 0x100 * m)
+#define DMAC_DMACR(m)	(DMAC_BASE + 0x0300 + 0x100 * (m))              /* DMA control register */
+#define DMAC_DMAIPR(m)	(DMAC_BASE + 0x0304 + 0x100 * (m))              /* DMA interrupt pending */
+#define DMAC_DMADBR(m)	(DMAC_BASE + 0x0308 + 0x100 * (m))              /* DMA doorbell */
+#define DMAC_DMADBSR(m)	(DMAC_BASE + 0x030C + 0x100 * (m))              /* DMA doorbell set */
+#define DMAC_DMACKE(m)  (DMAC_BASE + 0x0310 + 0x100 * (m))
+
 
 #define REG_DMAC_DSAR(n)	REG32(DMAC_DSAR((n)))
 #define REG_DMAC_DTAR(n)	REG32(DMAC_DTAR((n)))
@@ -933,7 +1301,7 @@ static inline u32 jz_readl(u32 address)
 #define REG_DMAC_DMAIPR(m)	REG32(DMAC_DMAIPR(m))
 #define REG_DMAC_DMADBR(m)	REG32(DMAC_DMADBR(m))
 #define REG_DMAC_DMADBSR(m)	REG32(DMAC_DMADBSR(m))
-#define REG_DMAC_DMADCKE(m)	REG32(DMAC_DMADCKE(m))
+#define REG_DMAC_DMACKE(m)	REG32(DMAC_DMACKE(m))
 
 // DMA request source register
 #define DMAC_DRSR_RS_BIT	0
@@ -1153,7 +1521,7 @@ static inline u32 jz_readl(u32 address)
  *************************************************************************/
 
 #define IRDA_BASE	UART0_BASE
-//#define UART_BASE	UART0_BASE
+#define UART_BASE	UART0_BASE
 #define UART_OFF	0x1000
 
 /* Register Offset */
@@ -1911,15 +2279,16 @@ static inline u32 jz_readl(u32 address)
 #define REG_EMC_DMAR0	REG32(EMC_DMAR0)
 #define REG_EMC_DMAR1	REG32(EMC_DMAR1)
 
-#define EMC_PMEMPS0	(EMC_BASE + 0x6000)
+#define EMC_PMEMPS0	(EMC_BASE + 0x6008)
 #define EMC_PMEMPS1	(EMC_BASE + 0x6004)
-#define EMC_PMEMPS2	(EMC_BASE + 0x6008)
-#define EMC_PMEMPS3	(EMC_BASE + 0x600c)
-
+#define EMC_PMEMPS2	(EMC_BASE + 0x600c)
+#define EMC_PMEMPS3	(EMC_BASE + 0x6010)
+ 
 #define REG_EMC_PMEMPS0	REG32(EMC_PMEMPS0)
 #define REG_EMC_PMEMPS1	REG32(EMC_PMEMPS1)
 #define REG_EMC_PMEMPS2	REG32(EMC_PMEMPS2)
 #define REG_EMC_PMEMPS3	REG32(EMC_PMEMPS3)
+
 
 /* DRAM Control Register */
 #define EMC_DMCR_BW_BIT		31
@@ -2039,6 +2408,56 @@ static inline u32 jz_readl(u32 address)
 #define EMC_DMAR_MASK_64_64	(0xfc << EMC_DMAR_MASK_BIT)  /*mask for two 64M SDRAM*/
 #define EMC_DMAR_MASK_128_128	(0xf8 << EMC_DMAR_MASK_BIT)  /*mask for two 128M SDRAM*/
 
+#define EMC_PMEMPS0_PDDQS_BIT               28
+ #define EMC_PMEMPS0_PDDQS                  (0xf << EMC_PMEMPS0_PDDQS_BIT)
+#define EMC_PMEMPS0_PDDQ_BIT                24
+ #define EMC_PMEMPS0_PDDQ                   (0xf << EMC_PMEMPS0_PDDQ_BIT)
+#define EMC_PMEMPS0_SCHMITT_TRIGGER_DQS_BIT 20
+ #define EMC_PMEMPS0_SCHMITT_TRIGGER_DQS    (0xf << EMC_PMEMPS0_SCHMITT_TRIGGER_DQS_BIT)
+#define EMC_PMEMPS0_SCHMITT_TRIGGER_DQ_BIT  16
+ #define EMC_PMEMPS0_SCHMITT_TRIGGER_DQ     (0xf << EMC_PMEMPS0_SCHMITT_TRIGGER_DQ_BIT)
+#define EMC_PMEMPS0_ENPULL_DQS_BIT          12
+ #define EMC_PMEMPS0_ENPULL_DQS             (0xf << EMC_PMEMPS0_ENPULL_DQS_BIT)
+#define EMC_PMEMPS0_ENPULL_DQ_BIT           8
+ #define EMC_PMEMPS0_ENPULL_DQ              (0xf << EMC_PMEMPS0_ENPULL_DQ_BIT)
+#define EMC_PMEMPS0_PULLUP_DQS_BIT          4
+ #define EMC_PMEMPS0_PULLUP_DQS             (0xf << EMC_PMEMPS0_PULLUP_DQS_BIT)
+#define EMC_PMEMPS0_PULLUP_DQ_BIT           0
+ #define EMC_PMEMPS0_PULLUP_DQ              (0xf << EMC_PMEMPS0_PULLUP_DQ_BIT)
+
+#define EMC_PMEMPS1_INEDQS_BIT               28
+ #define EMC_PMEMPS1_INEDQS                  (0xf << EMC_PMEMPS1_INEDQS_BIT)
+#define EMC_PMEMPS1_INEDQ_BIT                24
+ #define EMC_PMEMPS1_INEDQ                   (0xf << EMC_PMEMPS1_INEDQ_BIT)
+#define EMC_PMEMPS1_SSTL_MODE                (1 << 16)
+#define EMC_PMEMPS1_STRENGTH_DQS_BIT         8
+ #define EMC_PMEMPS1_STRENGTH_DQS_FULL       (0xff << EMC_PMEMPS1_STRENGTH_DQS_BIT)
+#define EMC_PMEMPS1_STRENGTH_DQ_BIT          0
+ #define EMC_PMEMPS1_STRENGTH_DQ_FULL        (0xff << EMC_PMEMPS1_STRENGTH_DQ_BIT)
+
+#define EMC_PMEMPS2_STRENGTH_CKO_BIT         18
+#define EMC_PMEMPS2_STRENGTH_CKE_BIT         16
+#define EMC_PMEMPS2_STRENGTH_ADDR_BIT        14
+#define EMC_PMEMPS2_STRENGTH_DM3_BIT         12
+#define EMC_PMEMPS2_STRENGTH_DM2_BIT         10
+#define EMC_PMEMPS2_STRENGTH_DM1_BIT         8
+#define EMC_PMEMPS2_STRENGTH_DM0_BIT         6
+#define EMC_PMEMPS2_STRENGTH_CMD_BIT         4
+#define EMC_PMEMPS2_STRENGTH_CS1_BIT         2
+#define EMC_PMEMPS2_STRENGTH_CS0_BIT         0
+
+#define EMC_PMEMPS2_STRENGTH_ALL_FULL        ((1 << 20) - 1)
+
+#define STRENGTH_SSTL18_REDUCED              1
+#define STRENGTH_SSTL18_FULL                 3
+#define STRENGTH_SSTL2_REDUCED               0
+#define STRENGTH_SSTL2_FULL                  2
+#define STRENGTH_LPDDR_REDUCED               0
+#define STRENGTH_LPDDR_FULL                  3
+#define STRENGTH_LVTTL_12MA_REDUCED          0
+#define STRENGTH_LVTTL_16MA_REDUCED          1
+#define STRENGTH_LVTTL_24MA_FULL             2
+#define STRENGTH_LVTTL_30MA_FULL             3
 
 /*************************************************************************
  * NEMC (External Normal Memory Controller)
@@ -2271,6 +2690,7 @@ static inline u32 jz_readl(u32 address)
 #define DDRC_CTRL_RESET	(1 << 0) /* 0 End resetting ddrc_controller
 					    1 Resetting ddrc_controller */
 
+
 /* DDRC Load-Mode-Register */
 #define DDRC_LMR_DDR_ADDR_BIT	16 /* When performing a DDR command, DDRC_ADDR[13:0]
 					      corresponding to external DDR address Pin A[13:0] */
@@ -2371,8 +2791,8 @@ static inline u32 jz_readl(u32 address)
 #define DDR1_MRS_OM_BIT		7        /* Operating Mode */
 #define DDR1_MRS_OM_MASK	(0x3f << DDR1_MRS_OM_BIT) 
   #define DDR1_MRS_OM_NORMAL	(0 << DDR1_MRS_OM_BIT)
-  #define DDR1_MRS_OM_DLLRST	(1 << DDR1_MRS_OM_BIT)
   #define DDR1_MRS_OM_TEST	(1 << DDR1_MRS_OM_BIT)
+  #define DDR1_MRS_OM_DLLRST	(2 << DDR1_MRS_OM_BIT)
 #if 0
 #define DDR1_MRS_CAS_BIT	4        /* CAS Latency */
 #define DDR1_MRS_CAS_MASK	(7 << DDR1_MRS_CAS_BIT)
@@ -2491,6 +2911,10 @@ static inline u32 jz_readl(u32 address)
 #define DDRC_MMAP_MASK_128_128	(0xf8 << DDRC_MMAP_MASK_BIT)  /*mask for two 128M SDRAM*/
 #define DDRC_MMAP_MASK_256_256	(0xf0 << DDRC_MMAP_MASK_BIT)  /*mask for two 128M SDRAM*/
 
+
+
+#define DDRC_MDELAY_MAUTO_BIT (6)
+#define DDRC_MDELAY_MAUTO  (1 << DDRC_MDELAY_MAUTO_BIT)  
 /*************************************************************************
  * CIM
  *************************************************************************/
@@ -3441,9 +3865,9 @@ static inline u32 jz_readl(u32 address)
 #define BCH_CNT_ENC_MASK         (0x7ff << BCH_CNT_ENC_BIT)
 
 /* BCH Error Report Register */
-#define BCH_ERR_INDEX_ODD_BIT    16
+#define BCH_ERR_INDEX_ODD_BIT    0
 #define BCH_ERR_INDEX_ODD_MASK   (0x1fff << BCH_ERR_INDEX_ODD_BIT)
-#define BCH_ERR_INDEX_EVEN_BIT   0
+#define BCH_ERR_INDEX_EVEN_BIT   16
 #define BCH_ERR_INDEX_EVEN_MASK  (0x1fff << BCH_ERR_INDEX_EVEN_BIT)
 
 //----------------------------------------------------------------------
@@ -3844,9 +4268,9 @@ do {		              						\
 	REG_GPIO_PXFUNS(0) = 0x002c00ff; /* SD0 ~ SD7, CS1#, FRE#, FWE# */ \
 	REG_GPIO_PXSELC(0) = 0x002c00ff;				\
 	REG_GPIO_PXPES(0) = 0x002c00ff;					\
-	REG_GPIO_PXFUNS(1) = 0x0000000c; /* CLE(SA2), ALE(SA3) */	\
-	REG_GPIO_PXSELC(1) = 0x0000000c;				\
-	REG_GPIO_PXPES(1) = 0x0000000c;					\
+	REG_GPIO_PXFUNS(1) = 0x00000003; /* CLE(SA2), ALE(SA3) */	\
+	REG_GPIO_PXSELC(1) = 0x00000003;				\
+	REG_GPIO_PXPES(1) = 0x00000003;					\
 									\
 	REG_GPIO_PXFUNS(0) = 0x00200000 << ((n)-1); /* CSn */		\
 	REG_GPIO_PXSELC(0) = 0x00200000 << ((n)-1);			\
@@ -3868,9 +4292,9 @@ do {		              						\
 	REG_GPIO_PXFUNS(0) = 0x002cffff; /* SD0 ~ SD15, CS1#, FRE#, FWE# */ \
 	REG_GPIO_PXSELC(0) = 0x002cffff;				\
 	REG_GPIO_PXPES(0) = 0x002cffff;					\
-	REG_GPIO_PXFUNS(1) = 0x0000000c; /* CLE(SA2), ALE(SA3) */	\
-	REG_GPIO_PXSELC(1) = 0x0000000c;				\
-	REG_GPIO_PXPES(1) = 0x0000000c;					\
+	REG_GPIO_PXFUNS(1) = 0x00000003; /* CLE(SA2), ALE(SA3) */	\
+	REG_GPIO_PXSELC(1) = 0x00000003;				\
+	REG_GPIO_PXPES(1) = 0x00000003;					\
 									\
 	REG_GPIO_PXFUNS(0) = 0x00200000 << ((n)-1); /* CSn */		\
 	REG_GPIO_PXSELC(0) = 0x00200000 << ((n)-1);			\
@@ -4568,9 +4992,8 @@ do {						\
 #define __cpm_select_rtcclk_rtc()	(REG_CPM_OPCR |= CPM_OPCR_ERCS)
 #define __cpm_select_rtcclk_exclk()	(REG_CPM_OPCR &= ~CPM_OPCR_ERCS)
 
-
 #ifdef CFG_EXTAL
-#define JZ_EXTAL		CFG_EXTAL
+#define JZ_EXTAL               CFG_EXTAL
 #else
 #define JZ_EXTAL		3686400
 #endif

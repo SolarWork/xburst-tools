@@ -21,6 +21,7 @@
 #include "target/jz4760.h"
 #include "target/nandflash.h"
 #include "target/usb_boot.h"
+#include "target/xburst_types.h"
 #include "usb_boot_defines.h"
 
 #define USE_BCH 1
@@ -53,9 +54,9 @@
 /*
  * NAND flash definitions
  */
-#define NAND_DATAPORT	0x1A000000
-#define NAND_ADDRPORT   0x1A800000
-#define NAND_COMMPORT   0x1A400000
+#define NAND_DATAPORT	0xBA000000
+#define NAND_ADDRPORT   0xBA800000
+#define NAND_COMMPORT   0xBA400000
 
 #define ECC_BLOCK	512
 static int par_size, par_size1;
@@ -153,8 +154,8 @@ inline void nand_enable_4760(unsigned int csn)
 	//this fun to enable the chip select pin csn
 	//the choosn chip can work after this fun
 	//dprintf("\n Enable chip select :%d",csn);
-	__nand_enable();
 	__gpio_as_nand_8bit(1);
+	__nand_enable();
 }
 
 inline void nand_disable_4760(unsigned int csn)
@@ -179,7 +180,6 @@ void udelay(unsigned long usec)
 
 unsigned int nand_query_4760(u8 *id)
 {
-	u8 i, vid=0, did=0;
 	__nand_disable();
 	__nand_enable();
 #if 1
@@ -188,6 +188,7 @@ unsigned int nand_query_4760(u8 *id)
 #endif
 	__nand_cmd(CMD_READID);
 	__nand_addr(0);
+	serial_puts("xiangfu \n");
 
 	udelay(1000);
 #if 1
@@ -242,7 +243,6 @@ int nand_init_4760(int bus_width, int row_cycle, int page_size, int page_per_blo
 	/* Initialize NAND Flash Pins */
 	if (bus == 8) {
 		REG_NEMC_SMCR1 = 0x0d444400;
-//		REG_NEMC_SMCR1 = 0x0fff7700;  /* slower */
 		__gpio_as_nand_8bit(1);
 		write_proc = nand_data_write8;
 		read_proc = nand_data_read8;
@@ -360,8 +360,9 @@ static int nand_check_block(u32 block)
 		if (oob_buf[bad_block_pos] != 0xff)
 		{
 			serial_put_hex(oob_buf[bad_block_pos]);
-			serial_puts("Skip a bad block at");
+			serial_puts("Skip a bad block at:\n");
 			serial_put_hex(block);
+
 			return 1;
 		}
 

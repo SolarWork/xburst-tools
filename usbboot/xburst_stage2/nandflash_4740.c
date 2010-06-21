@@ -48,17 +48,12 @@
 #define CMD_PGPROG	0x10
 #define CMD_READID	0x90
 
-#define OOB_BAD_OFF	0x00
-#define OOB_ECC_OFF	0x04
-
 #define OP_ERASE	0
 #define OP_WRITE	1
 #define OP_READ	2
 
 #define ECC_BLOCK	512
-#define ECC_POS	6
 #define PAR_SIZE	9
-#define ECC_SIZE	36
 
 static volatile unsigned char *gpio_base = (volatile unsigned char *)0xb0010000;
 static volatile unsigned char *emc_base = (volatile unsigned char *)0xb3010000;
