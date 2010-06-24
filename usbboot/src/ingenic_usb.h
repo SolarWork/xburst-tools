@@ -55,9 +55,6 @@
 #define PRODUCT_ID_4750	0x4750
 #define PRODUCT_ID_4760	0x4760
 
-#define STAGE1_FILE_PATH (DATADIR "xburst_stage1.bin")
-#define STAGE2_FILE_PATH (DATADIR "xburst_stage2.bin")
-
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 
 struct ingenic_dev {

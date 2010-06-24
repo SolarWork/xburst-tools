@@ -33,6 +33,7 @@
 
 extern int com_argc;
 extern char com_argv[MAX_ARGC][MAX_COMMAND_LENGTH];
+extern char * stage1;
 
 struct ingenic_dev ingenic_dev;
 struct hand hand;
@@ -788,7 +789,7 @@ int debug_memory(int obj, unsigned int start, unsigned int size)
 	printf(" Now test memory from 0x%x to 0x%x: \n",
 	       start, start + hand.fw_args.size);
 
-	if (load_file(&ingenic_dev, STAGE1_FILE_PATH) < 1)
+	if (load_file(&ingenic_dev, stage1) < 1)
 		return -1;
 	if (usb_ingenic_upload(&ingenic_dev, 1) < 1)
 		return -1;
@@ -841,7 +842,7 @@ int debug_gpio(int obj, unsigned char ops, unsigned char pin)
 	else
 		printf(" GPIO %d clear!\n",pin);
 
-	if (load_file(&ingenic_dev, STAGE1_FILE_PATH) < 1)
+	if (load_file(&ingenic_dev, stage1) < 1)
 		return -1;
 	if (usb_ingenic_upload(&ingenic_dev, 1) < 1)
 		return -1;

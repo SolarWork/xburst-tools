@@ -30,6 +30,8 @@ extern unsigned char code_buf[4 * 512 * 1024];
 
 int com_argc;
 char com_argv[MAX_ARGC][MAX_COMMAND_LENGTH];
+char * stage1;
+char * stage2;
 
 static const char COMMAND[][COMMAND_NUM]=
 {
@@ -289,7 +291,7 @@ int command_handle(char *buf)
 		handle_gpio(3);
 		break;
 	case 20:
-		boot(STAGE1_FILE_PATH, STAGE2_FILE_PATH);
+		boot(stage1, stage2);
 		break;
 	case 26:
 		handle_nmark();

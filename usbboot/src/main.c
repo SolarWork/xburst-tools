@@ -27,9 +27,13 @@
 #include "ingenic_cfg.h"
 
 #define CONFIG_FILE_PATH (CFGDIR "usbboot.cfg")
+#define STAGE1_FILE_PATH (DATADIR "xburst_stage1.bin")
+#define STAGE2_FILE_PATH (DATADIR "xburst_stage2.bin")
 
 extern struct ingenic_dev ingenic_dev;
 extern struct hand hand;
+extern char * stage1;
+extern char * stage2;
 
 static void help(void)
 {
@@ -39,6 +43,8 @@ static void help(void)
 	       "  -c --command\t\t\tDirect run the commands, split by ';'\n"
 	       "              \t\t\tNOTICE: the max commands count is 10!\n"
 	       "  -f --configure\t\tconfigure file path\n"
+	       "  -1 --stage1\t\tstage1 file path\n"
+	       "  -2 --stage2\t\tstage2 file path\n"
 	       "  <run without options to enter commands via usbboot prompt>\n\n"
 	       "Report bugs to <xiangfu@sharism.cc>.\n"
 		);
@@ -54,6 +60,8 @@ static struct option opts[] = {
 	{ "version", 0, 0, 'v' },
 	{ "command", 1, 0, 'c' },
 	{ "configure", 1, 0, 'f' },
+	{ "stage1", 1, 0, '1' },
+	{ "stage2", 1, 0, '2' },
 	{ 0, 0, 0, 0 }
 };
 
@@ -64,14 +72,17 @@ int main(int argc, char **argv)
 	char com_buf[256] = {0};
 	char *cmdpt;
 	char *cfgpath = CONFIG_FILE_PATH;
+	stage1 = STAGE1_FILE_PATH;
+	stage2 = STAGE2_FILE_PATH;
 
 	printf("usbboot - Ingenic XBurst USB Boot Utility\n"
 	       "(c) 2009 Ingenic Semiconductor Inc., Qi Hardware Inc., Xiangfu Liu, Marek Lindner\n"
 	       "This program is Free Software and comes with ABSOLUTELY NO WARRANTY.\n\n");
 
+
 	while(1) {
 		int c, option_index = 0;
-		c = getopt_long(argc, argv, "hvc:f:", opts,
+		c = getopt_long(argc, argv, "hvc:f:1:2:", opts,
 				&option_index);
 		if (c == -1)
 			break;
@@ -89,6 +100,12 @@ int main(int argc, char **argv)
 			break;
 		case 'f':
 			cfgpath = optarg;
+			break;
+		case '1':
+			stage1 = optarg;
+			break;
+		case '2':
+			stage2 = optarg;
 			break;
 		default:
 			help();
