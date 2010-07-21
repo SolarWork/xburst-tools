@@ -188,8 +188,6 @@ unsigned int nand_query_4760(u8 *id)
 #endif
 	__nand_cmd(CMD_READID);
 	__nand_addr(0);
-	serial_puts("xiangfu \n");
-
 	udelay(1000);
 #if 1
 	id[0] = __nand_data8();      //VID
