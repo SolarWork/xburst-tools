@@ -1,6 +1,6 @@
 /*
  * Copyright(C) 2009  Qi Hardware Inc.,
- * Authors: Xiangfu Liu <xiangfu@qi-hardware.com>
+ * Authors: Xiangfu Liu <xiangfu@sharism.cc>
  *          Marek Lindner <lindner_marek@yahoo.de>
  *
  * This program is free software: you can redistribute it and/or modify

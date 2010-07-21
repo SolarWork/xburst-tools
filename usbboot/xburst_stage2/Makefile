@@ -1,6 +1,6 @@
 #
 # Authors: Lucifer at Ingenic Semiconductor Inc.
-#          Xiangfu Liu <xiangfu@qi-hardware.com>
+#          Xiangfu Liu <xiangfu@sharism.cc>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License

@@ -1,15 +1,15 @@
-This package was debianized by Xiangfu Liu<xiangfu@qi-hardware.com> on
+This package was debianized by Xiangfu Liu<xiangfu@sharism.cc> on
 Mon, 22 Jun 2009 22:48:14 +0800.
 
 It was downloaded from <http://projects.qi-hardware.com/index.php/p/xburst-tools>
 
-Upstream Author: Xiangfu Liu <xiangfu@qi-hardware.com>
+Upstream Author: Xiangfu Liu <xiangfu@sharism.cc>
 
 
 The Debian packaging is copyright 2009, 
-	Xiangfu Liu<xiangfu@qi-hardware.com> and
+	Xiangfu Liu<xiangfu@sharism.cc> and
 	Marek Lindner <lindner_marek@yahoo.de>
-	Wolfgang Spraul <wolfgang@qi-hardware.com>
+	Wolfgang Spraul <wolfgang@sharism.cc>
 	Ingenic Semiconductor Inc.
 	Seeger Chin <seeger.chin@gmail.com>
 	Michael Anburaj <michaelanburaj@hotmail.com>
