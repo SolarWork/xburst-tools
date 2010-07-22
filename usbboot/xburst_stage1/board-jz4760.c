@@ -6,8 +6,8 @@
  * Copyright (C) 2006 Ingenic Semiconductor Inc.
  *
  */
-#include "target/jz4760.h"
 #include "target/xburst_types.h"
+#include "target/jz4760.h"
 #include "board-jz4760.h"
 
 extern volatile u32 UART_BASE;
@@ -463,8 +463,8 @@ static int ddr_dma_test(int print_flag) {
 	volatile unsigned int tmp;
 	register unsigned int cpu_clk;
 	long int memsize, banksize, testsize;
-	REG_DMAC_DMADCKE(0) = 0x3f;
-	REG_DMAC_DMADCKE(1) = 0x3f;
+	REG_DMAC_DMACKE(0) = 0x3f;
+	REG_DMAC_DMACKE(1) = 0x3f;
 
 #ifndef CONFIG_DDRC
 	banks = (SDRAM_BANK4 ? 4 : 2) *(CONFIG_NR_DRAM_BANKS);
@@ -849,8 +849,8 @@ void sdram_init_4760(void)
 	//add driver power
 	REG_EMC_PMEMPS2 |= (3 << 18);
 
-	REG_DMAC_DMADCKE(0) = 0x3f;
-	REG_DMAC_DMADCKE(1) = 0x3f;
+	REG_DMAC_DMACKE(0) = 0x3f;
+	REG_DMAC_DMACKE(1) = 0x3f;
 	int i, num = 0, tsel = 0, msel, hl;
 	volatile unsigned int tmp_cnt;
 	register unsigned int tmp, cpu_clk, mem_clk, ddr_twr, ns, ns_int;

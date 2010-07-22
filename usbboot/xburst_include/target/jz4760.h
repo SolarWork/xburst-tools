@@ -1521,7 +1521,7 @@ do {							\
  *************************************************************************/
 
 #define IRDA_BASE	UART0_BASE
-#define UART_BASE	UART0_BASE
+//#define UART_BASE	UART0_BASE
 #define UART_OFF	0x1000
 
 /* Register Offset */
