@@ -3,24 +3,17 @@ Mon, 22 Jun 2009 22:48:14 +0800.
 
 It was downloaded from <http://projects.qi-hardware.com/index.php/p/xburst-tools>
 
-Upstream Author: Xiangfu Liu <xiangfu@sharism.cc>
-
-
-The Debian packaging is copyright 2009, 
-	Xiangfu Liu<xiangfu@sharism.cc> and
-	Marek Lindner <lindner_marek@yahoo.de>
+Upstream Author: Xiangfu Liu <xiangfu@sharism.cc> and
 	Wolfgang Spraul <wolfgang@sharism.cc>
+	Marek Lindner <lindner_marek@yahoo.de>
 	Ingenic Semiconductor Inc.
-	Seeger Chin <seeger.chin@gmail.com>
-	Michael Anburaj <michaelanburaj@hotmail.com>
-	Ralf Baechle
-	Silicon Graphics, Inc.
-	Paul M. Antoine
-	Kevin D. Kissell <kevink@mips.com>
-	Carsten Langgaard <carstenl@mips.com>
-	MIPS Technologies, Inc.
-	Maciej W. Rozycki
 	Lucifer at Ingenic Semiconductor Inc.
+	Seeger Chin <seeger.chin@gmail.com>
+
+
+The Debian packaging is copyright 2009, 2010
+	Xiangfu Liu<xiangfu@sharism.cc> and
+	Jonathan Nieder <jrnieder@gmail.com>
 is licensed under the GPL, see `/usr/share/common-licenses/GPL-3'.
 
 You are free to distribute this software under the terms of
