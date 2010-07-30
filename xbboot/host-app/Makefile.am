@@ -2,7 +2,7 @@ AM_CFLAGS = -pedantic -Wall -W -std=gnu99 -DDATADIR=\"$(pkgdatadir)\"
 
 xbboot_version.h:
 	echo -e '#ifndef XBBOOT_VERSION' \
-	'\n#define XBBOOT_VERSION "20100427-1"' \
+	'\n#define XBBOOT_VERSION "201007-1"' \
 	'\n#endif' > xbboot_version.h
 BUILT_SOURCES = xbboot_version.h
 
