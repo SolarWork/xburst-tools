@@ -9,6 +9,7 @@
 //
 
 #include <stdio.h>
+#include <stdint.h>
 #include <string.h>
 #include <usb.h>
 #include <time.h>
