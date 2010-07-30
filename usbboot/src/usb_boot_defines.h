@@ -34,7 +34,7 @@
 
 enum CPUTYPE {
 	JZ4740,
-	JZ4750,
+	JZ4750
 };
 
 enum USB_Boot_State {
@@ -47,7 +47,7 @@ enum USB_Boot_State {
 enum OPTION {
 	OOB_ECC,
 	OOB_NO_ECC,
-	NO_OOB,
+	NO_OOB
 };
 
 enum NOR_OPS_TYPE {
@@ -79,7 +79,7 @@ enum NAND_OPS_TYPE {
 };
 
 enum SDRAM_OPS_TYPE {
-	SDRAM_LOAD,
+	SDRAM_LOAD
 };
 
 enum DATA_STRUCTURE_OB {
