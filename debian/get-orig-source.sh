@@ -10,7 +10,7 @@ set -e
 : ${BRANCH=remotes/origin/master}
 
 mkdir debian-orig-source
-trap 'rm -fr debian-orig-source || exit 1' EXIT
+trap 'rm -fr debian-orig-source || exit 1' EXIT INT TERM
 
 git init -q debian-orig-source
 GIT_DIR=$(pwd)/debian-orig-source/.git
