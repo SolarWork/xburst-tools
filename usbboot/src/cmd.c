@@ -120,7 +120,7 @@ void init_cfg()
 	printf(" Configuring XBurst CPU succeeded.\n");
 	return;
 xout:
-	printf("Configuring XBurst CPU failed.\n");
+	printf(" Configuring XBurst CPU failed.\n");
 }
 
 int boot(char *stage1_path, char *stage2_path){
@@ -497,7 +497,7 @@ int nand_program_file(struct nand_in *nand_in,
 			return -1;
 
 		if (start_page - nand_in->start > hand.nand_ppb)
-			printf(" Skip a old bad block !\n");
+			printf(" Info - skip bad block!\n");
 		nand_in->start = start_page;
 
 #ifdef CONFIG_NAND_OUT
@@ -529,7 +529,7 @@ int nand_program_file(struct nand_in *nand_in,
 			return -1;
 
 		if (start_page - nand_in->start > hand.nand_ppb)
-			printf(" Skip a old bad block !");
+			printf(" Info - skip bad block!");
 
 #ifdef CONFIG_NAND_OUT
 		for (i=0; i < nand_in->max_chip; i++) {
@@ -578,7 +578,6 @@ int nand_prog(void)
 		" \t-e:\twith oob and ecc\n";
 
 	if (com_argc != 6) {
-		printf(" arguments count error.\n");
 		printf("%s", help);
 		return 0;
 	}
@@ -657,7 +656,6 @@ int nand_query(void)
 	printf(" Plane ID     :0x%x \n",(unsigned char)ret[4]);
 
 	usb_read_data_from_ingenic(&ingenic_dev, ret, 8);
-	printf(" Operation status: Success!\n");
 
 	return 1;
 }
