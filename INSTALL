@@ -21,3 +21,5 @@ Build and Installation:
 Buile Debian Package:
   Please read debian/README.source
 
+Create Source tarball, for example, version is: '201007-1'
+  git archive -v --format=tar 201007-1 |bzip2 > ../xburst-tools_201007-1.tar.bz2 
