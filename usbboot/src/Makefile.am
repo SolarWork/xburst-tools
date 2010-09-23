@@ -27,3 +27,7 @@ EXTRA_DIST = $(pkgdatadir) $(cfgdir)
 
 ../xburst_stage2/xburst_stage2.bin:
 	$(MAKE) CROSS_COMPILE=$(CROSS_COMPILE) -C ../xburst_stage2
+
+clean-local:
+	$(MAKE) CROSS_COMPILE=$(CROSS_COMPILE) -C ../xburst_stage1 clean
+	$(MAKE) CROSS_COMPILE=$(CROSS_COMPILE) -C ../xburst_stage2 clean

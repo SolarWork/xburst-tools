@@ -19,3 +19,6 @@ EXTRA_DIST = $(pkgdatadir)
 
 ../target-stage1/stage1.bin:
 	$(MAKE) CROSS_COMPILE=$(CROSS_COMPILE) -C ../target-stage1
+
+clean-local:
+	$(MAKE) CROSS_COMPILE=$(CROSS_COMPILE) -C ../target-stage1 clean
