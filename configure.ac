@@ -21,6 +21,10 @@ no) firmware=false ;;
 esac],[firmware=false])
 AM_CONDITIONAL([COND_FIRMWARE], [test "$firmware" = true])
 
+AC_ARG_VAR([CROSS_COMPILE],
+	[Cross compiler prefix for building firmware, ]
+	[e.g. CROSS_COMPILE=mipsel-openwrt-linux-.])
+
 # Checks for programs.
 AC_PROG_CC
 AC_PROG_CXX
