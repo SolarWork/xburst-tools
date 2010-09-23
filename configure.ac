@@ -25,6 +25,17 @@ AC_ARG_VAR([CROSS_COMPILE],
 	[Cross compiler prefix for building firmware, ]
 	[e.g. CROSS_COMPILE=mipsel-openwrt-linux-.])
 
+AS_VAR_IF([firmware], [true],
+	[
+	AS_VAR_IF([CROSS_COMPILE], [],
+		[AC_MSG_ERROR([CROSS_COMPILE prefix is not set, set to cross-prefix- use --disable-firmware])])
+	AC_CHECK_PROG([CROSS_GCC], [${CROSS_COMPILE}gcc], [yes], [no])
+	AS_VAR_IF([CROSS_GCC], [no],
+		[AC_MSG_ERROR([No cross compiler, check CROSS_COMPILE value])])
+	],
+	[CROSS_COMPILE="dummy-"]
+)
+
 # Checks for programs.
 AC_PROG_CC
 AC_PROG_CXX
