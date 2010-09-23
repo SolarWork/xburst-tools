@@ -4,21 +4,18 @@
 AC_PREREQ(2.63)
 AC_INIT([xburst-tools], [0.1])
 AC_CONFIG_AUX_DIR(m4)
-AM_INIT_AUTOMAKE(AC_PACKAGE_NAME, AC_PACKAGE_VERSION)
+AM_INIT_AUTOMAKE([foreign])
 AM_CONFIG_HEADER([config.h])
 
 AM_MAINTAINER_MODE
 
 AC_ARG_ENABLE([firmware],
- [AS_HELP_STRING([--disable-firmware],
-  [Do not build initialization code]
-  [(for example, because some other package contains it).])],
- [
-case "$enableval" in
-yes) firmware=true ;;
-no) firmware=false ;;
-*) AC_MSG_ERROR([bad value $enableval for --enable-firmware]) ;;
-esac],[firmware=false])
+	[AS_HELP_STRING([--disable-firmware],
+		[Do not build initialization code]
+		[(for example, because some other package contains it).])],
+	[AS_CASE([$enableval], [yes], [firmware=true], [no], [firmware=false],
+		[AC_MSG_ERROR([bad value $enableval for --enable-firmware])])],
+	[firmware=true])
 AM_CONDITIONAL([COND_FIRMWARE], [test "$firmware" = true])
 
 AC_ARG_VAR([CROSS_COMPILE],
