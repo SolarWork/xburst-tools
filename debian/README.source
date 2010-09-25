@@ -2,7 +2,6 @@ This Debian package is developed in a Git repository (see the Vcs-Git field
 of debian/control).  To build from a git checkout:
 
 	debian/rules get-orig-source VERSION=201007
-	mv xburst-tools_*.tar.gz ..
 	debian/autogen.sh
 	debuild
 

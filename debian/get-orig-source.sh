@@ -2,16 +2,20 @@
 # Build a tarball from the latest upstream version, with a nice
 # version number.
 #
-# Requires git 1.6.6 or later, GNU date, and gzip.
+# Requires tar.
 
 set -e
 
 : ${VERSION=201007}
 
-[ -f xburst-tools_${VERSION}.tar.bz2 ] || wget http://projects.qi-hardware.com/media/upload/xburst-tools/files/xburst-tools_${VERSION}.tar.bz2
-mkdir -p get-orig-source
-echo `pwd`
-cd get-orig-source && tar -jxf ../xburst-tools_${VERSION}.tar.bz2
-rm -rf get-orig-source/xburst-tools/debian get-orig-source/xburst-tools/.git
-cd get-orig-source && tar -czf ../../xburst-tools_${VERSION}-1.orig.tar.gz xburst-tools/
-rm -rf xburst-tools_${VERSION}.tar.bz2 get-orig-source
+mkdir -p debian-orig-source
+trap 'rm -fr debian-orig-source xburst-tools_${VERSION}.tar.bz2 || exit 1' EXIT INT TERM
+
+[ -f xburst-tools_${VERSION}.tar.bz2 ] || \
+	wget http://projects.qi-hardware.com/media/upload/xburst-tools/files/xburst-tools_${VERSION}.tar.bz2
+
+tar -jxf xburst-tools_${VERSION}.tar.bz2 -C debian-orig-source
+rm -rf debian-orig-source/debian
+cd debian-orig-source && tar -czf ../../xburst-tools_${VERSION}.orig.tar.gz . && cd ..
+
+rm -fr debian-orig-source xburst-tools_${VERSION}.tar.bz2

@@ -58,10 +58,4 @@ firmware: configure
 VERSION = 201007
 debiandir_SQ = $(subst ','\'',$(dir $(lastword $(MAKEFILE_LIST))))
 get-orig-source:
-	[ -f xburst-tools_$(VERSION).tar.bz2 ] || wget \
-		http://projects.qi-hardware.com/media/upload/xburst-tools/files/xburst-tools_$(VERSION).tar.bz2
-	mkdir -p get-orig-source
-	cd get-orig-source && tar -jxf ../xburst-tools_$(VERSION).tar.bz2
-	rm -rf get-orig-source/xburst-tools/debian get-orig-source/xburst-tools/.git
-	cd get-orig-source && tar -czf ../../xburst-tools_0.0+$(VERSION).orig.tar.gz .
-	rm -rf xburst-tools_$(VERSION).tar.bz2 get-orig-source
+	VERSION='$(VERSION)' sh '$(debiandir_SQ)'get-orig-source.sh
