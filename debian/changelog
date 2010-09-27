@@ -1,4 +1,4 @@
-xburst-tools (201007-1) lucid; urgency=low
+xburst-tools (201007-1) unstable; urgency=low
 
   * Initial release, taken from commit 7b710f3 (Closes: #535429)
 
