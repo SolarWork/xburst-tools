@@ -2,4 +2,4 @@ xburst-tools (201007-1) unstable; urgency=low
 
   * Initial release, taken from commit 7b710f3 (Closes: #535429)
 
- -- xiangfu <xiangfu@sharism.cc>  Tue, 14 Sep 2010 22:34:15 +0800
+ -- Xiangfu Liu <xiangfu@sharism.cc>  Tue, 14 Sep 2010 22:34:15 +0800
