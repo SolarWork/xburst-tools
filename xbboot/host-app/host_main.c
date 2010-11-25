@@ -70,11 +70,6 @@ int main(int argc, char** argv)
 		return EXIT_SUCCESS;
 	}
 
-	if ((getuid()) || (getgid())) {
-		fprintf(stderr, "Error - you must be root to run '%s'\n", argv[0]);
-		return EXIT_FAILURE;
-	}
-
 	if (!strcmp(argv[1], "-u") || !strcmp(argv[1], "--upload")) {
 		if (argc != 4) {
 			show_help();
@@ -435,7 +430,7 @@ void show_help()
 	       "(c) 2009 Wolfgang Spraul\n"
 	       "Report bugs to <wolfgang@sharism.cc>, <xiangfu@sharism.cc>.\n"
 	       "\n"
-	       "xbboot [vendor_request] ... (must run as root)\n"
+	       "xbboot [vendor_request] ...\n"
 	       "  -h --help                                 print this help message\n"
 	       "  -v --version                              print the version number\n"
 	       "  [-u | --upload] <address> <path>          upload file at <path> to <address> then jump to <address>\n"

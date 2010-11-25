@@ -37,7 +37,7 @@ extern char * stage2;
 
 static void help(void)
 {
-	printf("Usage: usbboot [options] ...(must run as root)\n"
+	printf("Usage: usbboot [options] ...\n"
 	       "  -h --help\t\t\tPrint this help message\n"
 	       "  -v --version\t\t\tPrint the version number\n"
 	       "  -c --command\t\t\tDirect run the commands, split by ';'\n"
@@ -111,11 +111,6 @@ int main(int argc, char **argv)
 			help();
 			exit(2);
 		}
-	}
-
-	if ((getuid()) || (getgid())) {
-		fprintf(stderr, "Error - you must be root to run '%s'\n", argv[0]);
-		return EXIT_FAILURE;
 	}
 
 	if (usb_ingenic_init(&ingenic_dev) < 1)
