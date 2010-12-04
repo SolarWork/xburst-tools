@@ -488,7 +488,10 @@ int ingenic_query_nand(void *hndl, int cs, nand_info_t *info) {
 
 int ingenic_dump_nand(void *hndl, int cs, int start, int pages, int type, const char *filename) {
 	HANDLE;
-
+	
+	int raw = type & NAND_RAW;
+	type &= ~NAND_RAW;
+	
 	int page_size = (handle->nand.nand_ps + (type == NO_OOB ? 0 : handle->nand.nand_os));
 	int chunk_pages = STAGE2_IOBUF / page_size;
 	
@@ -500,8 +503,6 @@ int ingenic_dump_nand(void *hndl, int cs, int start, int pages, int type, const 
 	void *iobuf = malloc(chunk_pages * page_size);
 	
 	int ret = 0;
-	int ignore_ecc = type & IGNORE_ECC;
-	type &= ~IGNORE_ECC;
 	
 	while(pages > 0) {
 		int chunk = pages < chunk_pages ? pages : chunk_pages;
@@ -517,7 +518,7 @@ int ingenic_dump_nand(void *hndl, int cs, int start, int pages, int type, const 
 		if(ret == -1)
 			break;
 		
-		ret = ingenic_nandop(handle->usb, cs, NAND_READ, type);
+		ret = ingenic_nandop(handle->usb, cs, raw ? NAND_READ_RAW : NAND_READ, type);
 		
 		if(ret == -1)
 			break;
@@ -543,7 +544,7 @@ int ingenic_dump_nand(void *hndl, int cs, int start, int pages, int type, const 
 		if(ret == -1) 
 			return -1;
 		
-		if(result[3] != 0 && !ignore_ecc) {
+		if(result[3] != 0 && !raw) {
 			debug(LEVEL_ERROR, "Ingenic: ECC failure while reading NAND. See UART output for details\n");
 					
 			errno = EIO;
@@ -585,4 +586,80 @@ int ingenic_erase_nand(void *hndl, int cs, int start, int blocks) {
 	hexdump(result, ret);
 		
 	return 0;
+}
+
+int ingenic_program_nand(void *hndl, int cs, int start, int type, const char *filename) {
+	HANDLE;
+	
+	int page_size = (handle->nand.nand_ps + (type == NO_OOB ? 0 : handle->nand.nand_os));
+	int chunk_pages = STAGE2_IOBUF / page_size;	
+	
+	FILE *in = fopen(filename, "rb");
+	
+	if(in == NULL)
+		return -1;
+	
+	fseek(in, 0, SEEK_END);
+	int file_size = ftell(in);
+	fseek(in, 0, SEEK_SET);
+	
+	int pages = file_size / page_size;
+	int ret = 0;
+	
+	void *iobuf = malloc(chunk_pages * page_size);
+		
+	debug(LEVEL_INFO, "Programming %d pages from %d (%d bytes, %d bytes/page)\n", pages, start, file_size, page_size);
+	
+	while(pages > 0) {
+		int chunk = pages < chunk_pages ? pages : chunk_pages;
+		int bytes = chunk * page_size;	
+		
+		debug(LEVEL_DEBUG, "Writing %d pages from %d\n", chunk, start);
+		
+		ret = fread(iobuf, 1, bytes, in);
+		
+		if(ret != bytes) {
+			debug(LEVEL_ERROR, "fread: %d\n", ret);
+			
+			ret = -1;
+			errno = EIO;
+			
+			break;
+		}
+		
+		if(usbdev_sendbulk(handle->usb, iobuf, bytes) == -1)
+			return -1;
+		
+		ret = ingenic_wordop(handle->usb, VR_SET_DATA_ADDRESS, start);
+		
+		if(ret == -1)
+			break;
+		
+		ret = ingenic_wordop(handle->usb, VR_SET_DATA_LENGTH, chunk);
+		
+		if(ret == -1)
+			break;
+		
+		ret = ingenic_nandop(handle->usb, cs, NAND_PROGRAM, type);
+		
+		if(ret == -1)
+			break;
+		
+		uint16_t result[4];
+		
+		ret = usbdev_recvbulk(handle->usb, result, sizeof(result));
+	
+		if(ret == -1) 
+			return -1;
+		
+		hexdump(result, ret);
+		
+		start += chunk;
+		pages -= chunk;
+	}
+	
+	free(iobuf);
+	fclose(in);
+	
+	return ret;
 }

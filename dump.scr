@@ -1,16 +1,18 @@
 echo "Dumping script"
 nquery 0
 
-set NAND_IGNORE_ECC 1
+#set NAND_RAW 1
 set NAND_ECCPOS 3
 rebuildcfg
 boot
 
 echo "Configured for bootloader IO!"
 
-ndump 0 0 64 "dump/nand.bin"
+ndump_oob 0 0 128 "dump/nand.bin"
 
-set NAND_IGNORE_ECC
+exit
+
+set NAND_RAW
 set NAND_ECCPOS 8
 rebuildcfg
 boot

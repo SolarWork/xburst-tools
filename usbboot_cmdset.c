@@ -31,6 +31,7 @@ static int usbboot_go(int argc, char *argv[]);
 static int usbboot_nquery(int argc, char *argv[]);
 static int usbboot_ndump(int argc, char *argv[]);
 static int usbboot_nerase(int argc, char *argv[]);
+static int usbboot_nprogram(int argc, char *argv[]);
 
 const shell_command_t usbboot_cmdset[] = {
 
@@ -42,6 +43,8 @@ const shell_command_t usbboot_cmdset[] = {
 	{ "ndump", "<DEVICE> <STARTPAGE> <PAGES> <FILE> - Dump NAND to file", usbboot_ndump },
 	{ "ndump_oob", "<DEVICE> <STARTPAGE> <PAGES> <FILE> - Dump NAND with OOB to file", usbboot_ndump },
 	{ "nerase", "<DEVICE> <STARTBLOCK> <BLOCKS> - Erase NAND blocks", usbboot_nerase },
+	{ "nprogram", "<DEVICE> <STARTPAGE> <FILE> - Program NAND from file", usbboot_nprogram },
+	{ "nprogram_oob", "<DEVICE> <STARTPAGE> <FILE> - Program NAND with OOB from file", usbboot_nprogram },
 	
 	{ NULL, NULL, NULL }
 };
@@ -123,8 +126,8 @@ static int usbboot_ndump(int argc, char *argv[]) {
 	
 	int type = strcmp(argv[0], "ndump_oob") ? NO_OOB : OOB_ECC;
 	
-	if(cfg_getenv("NAND_IGNORE_ECC"))
-		type |= IGNORE_ECC;
+	if(cfg_getenv("NAND_RAW"))
+		type |= NAND_RAW;
 	
 	int ret = ingenic_dump_nand(shell_device(), atoi(argv[1]), atoi(argv[2]), atoi(argv[3]), type, argv[4]);
 	
@@ -148,4 +151,29 @@ static int usbboot_nerase(int argc, char *argv[]) {
 	
 	return ret;
 	
+}
+
+static int usbboot_nprogram(int argc, char *argv[]) {
+	if(argc != 4) {
+		printf("Usage: %s <DEVICE> <STARTPAGE> <FILE>\n", argv[0]);
+		
+		return -1;
+	}
+	
+	int type = strcmp(argv[0], "nprogram_oob") ? NO_OOB : OOB_ECC;
+	
+	if(strcmp(argv[0], "nprogram_oob") == 0) {
+		if(cfg_getenv("NAND_RAW"))
+			type = OOB_ECC;
+		else
+			type = OOB_NO_ECC;
+	} else 
+		type = NO_OOB;
+	
+	int ret = ingenic_program_nand(shell_device(), atoi(argv[1]), atoi(argv[2]), type, argv[3]);
+	
+	if(ret == -1)
+		perror("ingenic_program_nand");
+	
+	return ret;
 }
