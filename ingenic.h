@@ -52,6 +52,7 @@
 #define OOB_ECC	0
 #define OOB_NO_ECC	1
 #define NO_OOB	2
+#define IGNORE_ECC	(1 << 7)
 
 typedef struct {
 	/* debug args */
@@ -135,5 +136,6 @@ int ingenic_go(void *hndl, uint32_t address);
 
 int ingenic_query_nand(void *hndl, int cs, nand_info_t *info);
 int ingenic_dump_nand(void *hndl, int cs, int start, int pages, int type, const char *filename);
+int ingenic_erase_nand(void *hndl, int cs, int start, int blocks);
 
 #endif

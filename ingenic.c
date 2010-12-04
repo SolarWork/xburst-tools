@@ -104,11 +104,8 @@ static uint32_t ingenic_probe(void *usb_hndl) {
 	magic[8] = 0;
 
 	for(int i = 0; magic_list[i].magic != NULL; i++)
-		if(strcmp(magic_list[i].magic, magic) == 0) {
-			debug(LEVEL_DEBUG, "Magic: '%s', type: %08X\n", magic, magic_list[i].id);
-
+		if(strcmp(magic_list[i].magic, magic) == 0)
 			return magic_list[i].id;
-		}
 
 	debug(LEVEL_ERROR, "Unknown CPU: '%s'\n", magic);
 	errno = EINVAL;
@@ -204,10 +201,6 @@ int ingenic_rebuild(void *hndl) {
 		* (handle->cfg.bank_num + 1) * 2
 		* (2 - handle->cfg.bus_width);
 
-	debug(LEVEL_DEBUG, "Firmware configuration dump:\n");
-
-	hexdump(&handle->cfg, sizeof(firmware_config_t));
-
 	handle->nand.cpuid = CPUID(handle->type);
 
 	NOPT("BUSWIDTH", bw, 1);
@@ -224,10 +217,6 @@ int ingenic_rebuild(void *hndl) {
 	NOPT("BCHBIT", bchbit, 1);
 	NOPT("WPPIN", wppin, 1);
 	NOPT("BLOCKPERCHIP", bpc, 1);
-
-	debug(LEVEL_DEBUG, "NAND configuration dump:\n");
-
-	hexdump(&handle->nand, sizeof(nand_config_t));
 
 	return 0;
 }
@@ -249,9 +238,6 @@ int ingenic_stage1_debugop(void *hndl, const char *filename, uint32_t op, uint32
 	handle->cfg.debug.pin_num = pin;
 	handle->cfg.debug.start = base;
 	handle->cfg.debug.size = size;
-
-	debug(LEVEL_DEBUG, "Debug configuration dump:\n");
-	hexdump(&handle->cfg, sizeof(firmware_config_t));
 
 	int ret = ingenic_loadstage(handle, INGENIC_STAGE1, filename);
 
@@ -398,8 +384,6 @@ int ingenic_configure_stage2(void *hndl) {
 	if(ret == -1)
 		return -1;
 
-	debug(LEVEL_DEBUG, "Stage2 configured\n");
-
 	return 0;
 }
 
@@ -408,8 +392,6 @@ int ingenic_load_sdram(void *hndl, void *data, uint32_t base, uint32_t size) {
 
 	while(size) {
 		int block = size > 65535 ? 65535 : size;
-
-		debug(LEVEL_DEBUG, "Loading SDRAM from %p to 0x%08X, size %u\n", data, base, block);	
 
 		if(ingenic_wordop(handle->usb, VR_SET_DATA_ADDRESS, base) == -1)
 			return -1;
@@ -510,8 +492,6 @@ int ingenic_dump_nand(void *hndl, int cs, int start, int pages, int type, const 
 	int page_size = (handle->nand.nand_ps + (type == NO_OOB ? 0 : handle->nand.nand_os));
 	int chunk_pages = STAGE2_IOBUF / page_size;
 	
-	debug(LEVEL_DEBUG, "Ingenic: NAND dump: page size: %d bytes, pages in chunk: %d\n", page_size, chunk_pages);
-	
 	FILE *dest = fopen(filename, "wb");
 	
 	if(dest == NULL)
@@ -520,13 +500,13 @@ int ingenic_dump_nand(void *hndl, int cs, int start, int pages, int type, const 
 	void *iobuf = malloc(chunk_pages * page_size);
 	
 	int ret = 0;
+	int ignore_ecc = type & IGNORE_ECC;
+	type &= ~IGNORE_ECC;
 	
 	while(pages > 0) {
 		int chunk = pages < chunk_pages ? pages : chunk_pages;
 		int bytes = chunk * page_size;
-		
-		debug(LEVEL_DEBUG, "Ingenic: dumping NAND %d to file %s from page %d, size: %d bytes (%d pages)\n", cs, filename, start, bytes, chunk);
-		
+	
 		ret = ingenic_wordop(handle->usb, VR_SET_DATA_ADDRESS, start);
 		
 		if(ret == -1)
@@ -549,21 +529,29 @@ int ingenic_dump_nand(void *hndl, int cs, int start, int pages, int type, const 
 	
 		if(ret != bytes) {
 			debug(LEVEL_ERROR, "Ingenic: NAND dump truncated: expected %d bytes, received %d\n", bytes, ret);
-		
+			
 			errno = EIO;
 		
-			return -1;
+			break;
 		}
 		
-		uint32_t result[4];
+		uint16_t result[4];
 	
+		
 		ret = usbdev_recvbulk(handle->usb, result, sizeof(result));
 	
 		if(ret == -1) 
 			return -1;
 		
+		if(result[3] != 0 && !ignore_ecc) {
+			debug(LEVEL_ERROR, "Ingenic: ECC failure while reading NAND. See UART output for details\n");
+					
+			errno = EIO;
+			
+			break;
+		}
+			
 		fwrite(iobuf, bytes, 1, dest);
-
 		
 		start += chunk;
 		pages -= chunk;
@@ -573,4 +561,28 @@ int ingenic_dump_nand(void *hndl, int cs, int start, int pages, int type, const 
 	fclose(dest);
 	
 	return ret;
+}
+
+int ingenic_erase_nand(void *hndl, int cs, int start, int blocks) {
+	HANDLE;
+	
+	if(ingenic_wordop(handle->usb, VR_SET_DATA_ADDRESS, start) == -1)
+		return -1;
+		
+	if(ingenic_wordop(handle->usb, VR_SET_DATA_LENGTH, blocks) == -1)
+		return -1;
+			
+	if(ingenic_nandop(handle->usb, cs, NAND_ERASE, 0) == -1)
+		return -1;
+		
+	uint16_t result[4];
+		
+	int ret = usbdev_recvbulk(handle->usb, result, sizeof(result));
+	
+	if(ret == -1) 
+		return -1;
+	
+	hexdump(result, ret);
+		
+	return 0;
 }
