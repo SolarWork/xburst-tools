@@ -1,6 +1,7 @@
 /*
  * JzBoot: an USB bootloader for JZ series of Ingenic(R) microprocessors.
- * Copyright (C) 2010  Sergey Gridassov <grindars@gmail.com>
+ * Copyright (C) 2010  Sergey Gridassov <grindars@gmail.com>,
+ *                     Peter Zotov <whitequark@whitequark.org>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -298,6 +299,10 @@ static int builtin_source(int argc, char *argv[]) {
 	}
 
 	int ret = shell_source(argv[1]);
+
+	if(ret == -1) {
+		printf("Error while sourcing file %s\n", argv[1]);
+	}
 
 	shell_exit = 0;
 
