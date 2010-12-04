@@ -1,6 +1,6 @@
 /*
  * JzBoot: an USB bootloader for JZ series of Ingenic(R) microprocessors.
- * Copyright (C) 2010  Sergey Gridassov <grindars@gmail.com>
+ * Copyright (C) 2010  Peter Zotov <whitequark@whitequark.org>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,35 +16,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __SHELL__H__
-#define __SHELL__H__
+#include <string.h>
+#include <stdio.h>
 
-typedef struct {
-	const char *cmd;
-	const char *description;
-	int (*handler)(int argc, char *argv[]);
-} shell_command_t;
+#include "shell.h"
+#include "config.h"
+#include "ingenic.h"
 
-int shell_init(void *ingenic);
-void shell_fini();
-
-void shell_interactive();
-int shell_source(const char *filename);
-int shell_execute(const char *input);
-
-void *shell_device();
-
-// lexer interface
-extern char *strval;
-
-#define TOK_SEPARATOR	1
-#define TOK_STRING	2
-#define TOK_SPACE	3
-#define TOK_COMMENT	4
-
-int shell_pull(char *buf, int maxlen);
-
-extern const shell_command_t spl_cmdset[];
-extern const shell_command_t usbboot_cmdset[];
-
-#endif
+const shell_command_t usbboot_cmdset[] = {
+	{ NULL, NULL, NULL }
+};
