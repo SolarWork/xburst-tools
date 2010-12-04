@@ -1,6 +1,7 @@
 /*
  * JzBoot: an USB bootloader for JZ series of Ingenic(R) microprocessors.
- * Copyright (C) 2010  Sergey Gridassov <grindars@gmail.com>
+ * Copyright (C) 2010  Sergey Gridassov <grindars@gmail.com>,
+ *                     Peter Zotov <whitequark@whitequark.org>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,5 +33,6 @@ void *usbdev_open(void *dev);
 void usbdev_close(void *hndl);
 int usbdev_vendor(void *hndl, int direction, uint8_t req, uint16_t value, uint16_t index, void *data, uint16_t size);
 int usbdev_sendbulk(void *hndl, void *data, int size);
+int usbdev_recvbulk(void *hndl, void *data, int size);
 
 #endif
