@@ -504,4 +504,73 @@ int ingenic_query_nand(void *hndl, int cs, nand_info_t *info) {
 	return 0;
 }
 
+int ingenic_dump_nand(void *hndl, int cs, int start, int pages, int type, const char *filename) {
+	HANDLE;
 
+	int page_size = (handle->nand.nand_ps + (type == NO_OOB ? 0 : handle->nand.nand_os));
+	int chunk_pages = STAGE2_IOBUF / page_size;
+	
+	debug(LEVEL_DEBUG, "Ingenic: NAND dump: page size: %d bytes, pages in chunk: %d\n", page_size, chunk_pages);
+	
+	FILE *dest = fopen(filename, "wb");
+	
+	if(dest == NULL)
+		return -1;
+	
+	void *iobuf = malloc(chunk_pages * page_size);
+	
+	int ret = 0;
+	
+	while(pages > 0) {
+		int chunk = pages < chunk_pages ? pages : chunk_pages;
+		int bytes = chunk * page_size;
+		
+		debug(LEVEL_DEBUG, "Ingenic: dumping NAND %d to file %s from page %d, size: %d bytes (%d pages)\n", cs, filename, start, bytes, chunk);
+		
+		ret = ingenic_wordop(handle->usb, VR_SET_DATA_ADDRESS, start);
+		
+		if(ret == -1)
+			break;
+		
+		ret = ingenic_wordop(handle->usb, VR_SET_DATA_LENGTH, chunk);
+		
+		if(ret == -1)
+			break;
+		
+		ret = ingenic_nandop(handle->usb, cs, NAND_READ, type);
+		
+		if(ret == -1)
+			break;
+		
+		int ret = usbdev_recvbulk(handle->usb, iobuf, bytes);
+	
+		if(ret == -1)
+			return -1;
+	
+		if(ret != bytes) {
+			debug(LEVEL_ERROR, "Ingenic: NAND dump truncated: expected %d bytes, received %d\n", bytes, ret);
+		
+			errno = EIO;
+		
+			return -1;
+		}
+		
+		uint32_t result[4];
+	
+		ret = usbdev_recvbulk(handle->usb, result, sizeof(result));
+	
+		if(ret == -1) 
+			return -1;
+		
+		fwrite(iobuf, bytes, 1, dest);
+
+		
+		start += chunk;
+		pages -= chunk;
+	}
+	
+	free(iobuf);
+	fclose(dest);
+	
+	return ret;
+}

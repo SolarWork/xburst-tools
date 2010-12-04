@@ -28,6 +28,7 @@ static int usbboot_boot(int argc, char *argv[]);
 static int usbboot_load(int argc, char *argv[]);
 static int usbboot_go(int argc, char *argv[]);
 static int usbboot_nquery(int argc, char *argv[]);
+static int usbboot_ndump(int argc, char *argv[]);
 
 const shell_command_t usbboot_cmdset[] = {
 
@@ -36,7 +37,9 @@ const shell_command_t usbboot_cmdset[] = {
 	{ "go", "<ADDRESS> - Jump to <ADDRESS>", usbboot_go },
 
 	{ "nquery", "<DEVICE> - Query NAND information", usbboot_nquery },
-
+	{ "ndump", "<DEVICE> <STARTPAGE> <PAGES> <FILE> - Dump NAND to file", usbboot_ndump },
+	{ "ndump_oob", "<DEVICE> <STARTPAGE> <PAGES> <FILE> - Dump NAND with OOB to file", usbboot_ndump },
+	
 	{ NULL, NULL, NULL }
 };
 
@@ -105,6 +108,26 @@ static int usbboot_nquery(int argc, char *argv[]) {
 		info.vid, info.pid, info.chip, info.page, info.plane);
 
 
+	return 0;
+}
+
+static int usbboot_ndump(int argc, char *argv[]) {
+	if(argc != 5) {
+		printf("Usage: %s <DEVICE> <STARTPAGE> <PAGES> <FILE>\n", argv[0]);
+		
+		return -1;
+	}
+	
+	int type = strcmp(argv[0], "ndump_oob") ? NO_OOB : OOB_ECC;
+	
+	int ret = ingenic_dump_nand(shell_device(), atoi(argv[1]), atoi(argv[2]), atoi(argv[3]), type, argv[4]);
+	
+	if(ret == -1) {
+		perror("ingenic_dump_nand");
+		
+		return -1;
+	}
+	
 	return 0;
 }
 

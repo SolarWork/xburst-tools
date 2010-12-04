@@ -32,6 +32,8 @@
 #define STAGE2_CODESIZE	0x400000
 #define SDRAM_BASE	0x80000000
 
+#define STAGE2_IOBUF (2048 * 128)
+
 #define DS_flash_info 0
 #define DS_hand	1
 
@@ -46,6 +48,10 @@
 #define NAND_READ	6
 #define NAND_PROGRAM	7
 #define NAND_READ_TO_RAM	8
+
+#define OOB_ECC	0
+#define OOB_NO_ECC	1
+#define NO_OOB	2
 
 typedef struct {
 	/* debug args */
@@ -128,5 +134,6 @@ int ingenic_load_sdram_file(void *hndl, uint32_t base, const char *filename);
 int ingenic_go(void *hndl, uint32_t address);
 
 int ingenic_query_nand(void *hndl, int cs, nand_info_t *info);
+int ingenic_dump_nand(void *hndl, int cs, int start, int pages, int type, const char *filename);
 
 #endif
