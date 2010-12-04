@@ -473,3 +473,35 @@ int ingenic_go(void *hndl, uint32_t address) {
 	return ingenic_wordop(handle->usb, VR_PROGRAM_START2, address);
 }
 
+static inline int ingenic_nandop(void *usb, uint8_t cs, uint8_t request, uint8_t param) {
+	return usbdev_vendor(usb, USBDEV_TODEV, VR_NAND_OPS, (param << 12) | (cs << 4) | (request & 0x0F), 0, 0, 0);
+}
+
+int ingenic_query_nand(void *hndl, int cs, nand_info_t *info) {
+	HANDLE;
+
+	if(ingenic_nandop(handle->usb, cs, NAND_QUERY, 0) == -1)
+		return -1;
+
+	uint32_t dummy[8];
+
+	int ret = usbdev_recvbulk(handle->usb, dummy, sizeof(dummy));
+
+	if(ret == -1)
+		return -1;
+
+	if(ret < sizeof(nand_info_t)) {
+		errno = EIO;
+
+		return -1;
+	}
+
+	memcpy(info, dummy, sizeof(nand_info_t));
+
+	if(usbdev_recvbulk(handle->usb, dummy, sizeof(dummy)) == -1)
+		return -1;
+
+	return 0;
+}
+
+

@@ -27,11 +27,15 @@
 static int usbboot_boot(int argc, char *argv[]);
 static int usbboot_load(int argc, char *argv[]);
 static int usbboot_go(int argc, char *argv[]);
+static int usbboot_nquery(int argc, char *argv[]);
 
 const shell_command_t usbboot_cmdset[] = {
+
 	{ "boot", "- Reconfigure stage2", usbboot_boot },
 	{ "load", "<FILE> <BASE> - Load file to SDRAM", usbboot_load },
 	{ "go", "<ADDRESS> - Jump to <ADDRESS>", usbboot_go },
+
+	{ "nquery", "<DEVICE> - Query NAND information", usbboot_nquery },
 
 	{ NULL, NULL, NULL }
 };
@@ -73,5 +77,34 @@ static int usbboot_go(int argc, char *argv[]) {
 		perror("ingenic_go");
 
 	return ret;
+}
+
+static int usbboot_nquery(int argc, char *argv[]) {
+	if(argc != 2) {
+		printf("Usage: %s <DEVICE>\n", argv[0]);
+
+		return -1;
+	}
+
+	nand_info_t info;
+
+	int ret = ingenic_query_nand(shell_device(), atoi(argv[1]), &info);
+
+	if(ret == -1) {
+		perror("ingenic_query_nand");
+
+		return -1;
+	}
+
+	printf(
+		"VID:   %02hhX\n"
+		"PID:   %02hhX\n"
+		"Chip:  %02hhX\n"
+		"Page:  %02hhX\n"
+		"Plane: %02hhX\n",
+		info.vid, info.pid, info.chip, info.page, info.plane);
+
+
+	return 0;
 }
 

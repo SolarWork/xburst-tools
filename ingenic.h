@@ -17,29 +17,6 @@
 #define VR_CONFIGRATION		0x09
 #define VR_GET_NUM		0x0a
 
-typedef struct {
-	void (*cmdset_change)(void *arg);
-} ingenic_callbacks_t;
-
-void *ingenic_open(void *usb_hndl);
-void ingenic_close(void *hndl);
-void ingenic_set_callbacks(void *hndl, const ingenic_callbacks_t *callbacks, void *arg);
-
-int ingenic_redetect(void *hndl);
-int ingenic_cmdset(void *hndl);
-int ingenic_type(void *hndl);
-uint32_t ingenic_sdram_size(void *hndl);
-
-int ingenic_rebuild(void *hndl);
-int ingenic_loadstage(void *hndl, int id, const char *filename);
-int ingenic_stage1_debugop(void *device, const char *filename, uint32_t op, uint32_t pin, uint32_t base, uint32_t size);
-int ingenic_memtest(void *hndl, const char *filename, uint32_t base, uint32_t size, uint32_t *fail);
-
-int ingenic_configure_stage2(void *hndl);
-int ingenic_load_sdram(void *hndl, void *data, uint32_t base, uint32_t size);
-int ingenic_load_sdram_file(void *hndl, uint32_t base, const char *filename);
-int ingenic_go(void *hndl, uint32_t address);
-
 #define CMDSET_SPL	1
 #define CMDSET_USBBOOT	2
 
@@ -59,6 +36,16 @@ int ingenic_go(void *hndl, uint32_t address);
 #define DS_hand	1
 
 #define SDRAM_LOAD	0
+
+#define NAND_QUERY	0
+#define NAND_INIT	1
+#define NAND_MARK_BAD	2
+#define NAND_READ_OOB	3
+#define NAND_READ_RAW	4
+#define NAND_ERASE	5
+#define NAND_READ	6
+#define NAND_PROGRAM	7
+#define NAND_READ_TO_RAM	8
 
 typedef struct {
 	/* debug args */
@@ -108,5 +95,38 @@ typedef struct {
 	uint32_t nand_wppin;
 	uint32_t nand_bpc;		/* block number per chip */
 } nand_config_t;
+
+typedef struct {
+	uint8_t	vid;
+	uint8_t	pid;
+	uint8_t	chip;
+	uint8_t	page;
+	uint8_t	plane;
+} nand_info_t;
+
+typedef struct {
+	void (*cmdset_change)(void *arg);
+} ingenic_callbacks_t;
+
+void *ingenic_open(void *usb_hndl);
+void ingenic_close(void *hndl);
+void ingenic_set_callbacks(void *hndl, const ingenic_callbacks_t *callbacks, void *arg);
+
+int ingenic_redetect(void *hndl);
+int ingenic_cmdset(void *hndl);
+int ingenic_type(void *hndl);
+uint32_t ingenic_sdram_size(void *hndl);
+
+int ingenic_rebuild(void *hndl);
+int ingenic_loadstage(void *hndl, int id, const char *filename);
+int ingenic_stage1_debugop(void *device, const char *filename, uint32_t op, uint32_t pin, uint32_t base, uint32_t size);
+int ingenic_memtest(void *hndl, const char *filename, uint32_t base, uint32_t size, uint32_t *fail);
+
+int ingenic_configure_stage2(void *hndl);
+int ingenic_load_sdram(void *hndl, void *data, uint32_t base, uint32_t size);
+int ingenic_load_sdram_file(void *hndl, uint32_t base, const char *filename);
+int ingenic_go(void *hndl, uint32_t address);
+
+int ingenic_query_nand(void *hndl, int cs, nand_info_t *info);
 
 #endif
