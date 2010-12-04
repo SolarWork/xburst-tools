@@ -19,16 +19,19 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "shell.h"
 #include "config.h"
 #include "ingenic.h"
 
 static int spl_memtest(int argc, char *argv[]);
+static int spl_gpio(int argc, char *argv[]);
 static int spl_boot(int argc, char *argv[]);
 
 const shell_command_t spl_cmdset[] = {
 	{ "memtest", "[BASE <SIZE>] - SDRAM test", spl_memtest },
+	{ "gpio", "<PIN> <STATE> - Set GPIO #PIN to STATE 0 or 1", spl_gpio },
 	{ "boot", " - Load stage2 USB bootloader", spl_boot },
 	{ NULL, NULL, NULL }
 };
@@ -49,6 +52,40 @@ static int spl_memtest(int argc, char *argv[]) {
 	}
 
 	return spl_load_stage1(); // TODO
+}
+
+static int spl_gpio(int argc, char *argv[]) {
+	if(argc != 3 || (strcmp(argv[2], "0") && strcmp(argv[2], "1"))) {
+		printf("Usage: %s <PIN> <STATE>\n", argv[0]);
+		printf("  STATE := 0 | 1\n");
+
+		return -1;
+	}
+
+	char *old_debugops = strdup(cfg_getenv("DEBUGOPS")),
+	     *old_pinnum   = strdup(cfg_getenv("PINNUM"));
+
+	cfg_setenv("DEBUGOPS", (!strcmp(argv[2], "1")) ?
+			SPL_DEBUG_GPIO_SET : SPL_DEBUG_GPIO_CLEAR);
+	cfg_setenv("PINNUM", argv[1]);
+
+	int ret = 0;
+
+	ret = shell_execute("rebuildcfg");
+
+	if(ret == -1)
+		goto finally;
+
+	ret = spl_load_stage1();
+
+finally:
+	cfg_setenv("DEBUGOPS", old_debugops);
+	cfg_setenv("PINNUM", old_pinnum);
+
+	free(old_debugops);
+	free(old_pinnum);
+
+	return ret;
 }
 
 static int spl_boot(int argc, char *argv[]) {

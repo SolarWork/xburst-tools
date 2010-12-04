@@ -38,6 +38,10 @@ int ingenic_loadstage(void *hndl, int id, const char *filename);
 #define INGENIC_STAGE1	1
 #define INGENIC_STAGE2	2
 
+#define SPL_DEBUG_MEMTEST	"1"
+#define SPL_DEBUG_GPIO_SET	"2"
+#define SPL_DEBUG_GPIO_CLEAR	"3"
+
 #define STAGE1_BASE	0x2000
 #define STAGE2_CODESIZE	0x400000
 #define SDRAM_BASE	0x80000000
