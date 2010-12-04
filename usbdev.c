@@ -141,7 +141,19 @@ int usbdev_sendbulk(void *hndl, void *data, int size) {
 
 	debug(LEVEL_DEBUG, "Bulk: writing data %p, size %d\n", data, size);
 
-	return translate_libusb(libusb_bulk_transfer(hndl, ENDPOINT_OUT, data, size, &trans, CONTROL_TIMEOUT));
+	if(translate_libusb(libusb_bulk_transfer(hndl, ENDPOINT_OUT, data, size, &trans, CONTROL_TIMEOUT)) == -1) {
+		return -1;
+	}
+
+	if(trans != size) {
+		debug(LEVEL_WARNING, "Bulk data truncated: requested %d, sent %d\n", size, trans);
+
+		errno = EIO;
+
+		return -1;
+	}
+
+	return 0;
 }
 
 int usbdev_recvbulk(void *hndl, void *data, int size) {

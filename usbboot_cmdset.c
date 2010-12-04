@@ -18,15 +18,20 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "shell.h"
 #include "config.h"
 #include "ingenic.h"
 
 static int usbboot_boot(int argc, char *argv[]);
+static int usbboot_load(int argc, char *argv[]);
+static int usbboot_go(int argc, char *argv[]);
 
 const shell_command_t usbboot_cmdset[] = {
 	{ "boot", "- Reconfigure stage2", usbboot_boot },
+	{ "load", "<FILE> <BASE> - Load file to SDRAM", usbboot_load },
+	{ "go", "<ADDRESS> - Jump to <ADDRESS>", usbboot_go },
 
 	{ NULL, NULL, NULL }
 };
@@ -36,6 +41,36 @@ static int usbboot_boot(int argc, char *argv[]) {
 
 	if(ret == -1)
 		perror("ingenic_configure_stage2");
+
+	return ret;
+}
+
+static int usbboot_load(int argc, char *argv[]) {
+	if(argc != 3) {
+		printf("Usage: %s <FILE> <BASE>\n", argv[0]);
+
+		return -1;
+	}
+
+	int ret = ingenic_load_sdram_file(shell_device(), strtoul(argv[2], NULL, 0), argv[1]);
+
+	if(ret == -1)
+		perror("ingenic_load_sdram_file");
+
+	return ret;
+}
+
+static int usbboot_go(int argc, char *argv[]) {
+	if(argc != 2) {
+		printf("Usage: %s <ADDRESS>\n", argv[0]);
+
+		return -1;
+	}
+
+	int ret = ingenic_go(shell_device(), strtoul(argv[1], NULL, 0));
+
+	if(ret == -1)
+		perror("ingenic_go");
 
 	return ret;
 }

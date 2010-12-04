@@ -36,6 +36,9 @@ int ingenic_stage1_debugop(void *device, const char *filename, uint32_t op, uint
 int ingenic_memtest(void *hndl, const char *filename, uint32_t base, uint32_t size, uint32_t *fail);
 
 int ingenic_configure_stage2(void *hndl);
+int ingenic_load_sdram(void *hndl, void *data, uint32_t base, uint32_t size);
+int ingenic_load_sdram_file(void *hndl, uint32_t base, const char *filename);
+int ingenic_go(void *hndl, uint32_t address);
 
 #define CMDSET_SPL	1
 #define CMDSET_USBBOOT	2
@@ -54,6 +57,9 @@ int ingenic_configure_stage2(void *hndl);
 
 #define DS_flash_info 0
 #define DS_hand	1
+
+#define SDRAM_LOAD	0
+
 typedef struct {
 	/* debug args */
 	uint8_t debug_ops;

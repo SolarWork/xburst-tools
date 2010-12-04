@@ -238,8 +238,8 @@ uint32_t ingenic_sdram_size(void *hndl) {
 	return handle->total_sdram_size;
 }
 
-static int ingenic_address(void *usb, uint32_t base) {
-	return usbdev_vendor(usb, USBDEV_TODEV, VR_SET_DATA_ADDRESS, (base >> 16), base & 0xFFFF, 0, 0);
+static int ingenic_wordop(void *usb, int op, uint32_t base) {
+	return usbdev_vendor(usb, USBDEV_TODEV, op, (base >> 16), base & 0xFFFF, 0, 0);
 }
 
 int ingenic_stage1_debugop(void *hndl, const char *filename, uint32_t op, uint32_t pin, uint32_t base, uint32_t size) {
@@ -307,7 +307,7 @@ int ingenic_loadstage(void *hndl, int id, const char *file) {
 
 	memcpy(data + 8, &handle->cfg, sizeof(firmware_config_t));
 
-	if(ingenic_address(handle->usb, base) == -1) {
+	if(ingenic_wordop(handle->usb, VR_SET_DATA_ADDRESS, base) == -1) {
 		free(data);
 
 		return -1;
@@ -401,5 +401,75 @@ int ingenic_configure_stage2(void *hndl) {
 	debug(LEVEL_DEBUG, "Stage2 configured\n");
 
 	return 0;
+}
+
+int ingenic_load_sdram(void *hndl, void *data, uint32_t base, uint32_t size) {
+	HANDLE;
+
+	while(size) {
+		int block = size > 65535 ? 65535 : size;
+
+		debug(LEVEL_DEBUG, "Loading SDRAM from %p to 0x%08X, size %u\n", data, base, block);	
+
+		if(ingenic_wordop(handle->usb, VR_SET_DATA_ADDRESS, base) == -1)
+			return -1;
+
+		if(ingenic_wordop(handle->usb, VR_SET_DATA_LENGTH, block) == -1)
+			return -1;
+
+
+		if(usbdev_sendbulk(handle->usb, data, block) == -1)
+			return -1;
+		
+
+
+		if(usbdev_vendor(handle->usb, USBDEV_TODEV, VR_SDRAM_OPS, SDRAM_LOAD, 0, 0, 0) == -1)
+			return -1;
+
+		uint32_t result[8];
+
+		if(usbdev_recvbulk(handle->usb, result, sizeof(result)) == -1)
+			return -1;
+
+		data += 65535;
+		base += 65535;
+		if(size <= 65535)
+			break;
+
+		size -= 65535;
+	}
+	debug(LEVEL_DEBUG, "Load done\n");
+
+	return 0;
+}
+
+int ingenic_load_sdram_file(void *hndl, uint32_t base, const char *file) {
+	HANDLE;
+
+	FILE *fd = fopen(file, "rb");
+
+	if(fd == NULL) 
+		return -1;
+
+	fseek(fd, 0, SEEK_END);
+	int size = ftell(fd);
+	fseek(fd, 0, SEEK_SET);
+
+	void *data = malloc(size);
+	fread(data, size, 1, fd);
+
+	fclose(fd);
+
+	int ret = ingenic_load_sdram(handle, data, base, size);
+
+	free(data);
+
+	return ret;
+}
+
+int ingenic_go(void *hndl, uint32_t address) {
+	HANDLE;
+
+	return ingenic_wordop(handle->usb, VR_PROGRAM_START2, address);
 }
 
