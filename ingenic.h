@@ -39,6 +39,7 @@ int ingenic_loadstage(void *hndl, int id, const char *filename);
 #define INGENIC_STAGE2	2
 
 #define STAGE1_BASE	0x2000
+#define STAGE2_CODESIZE	0x400000
 #define SDRAM_BASE	0x80000000
 
 typedef struct {

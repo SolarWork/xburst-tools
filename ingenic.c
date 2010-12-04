@@ -1,6 +1,7 @@
 /*
  * JzBoot: an USB bootloader for JZ series of Ingenic(R) microprocessors.
- * Copyright (C) 2010  Sergey Gridassov <grindars@gmail.com>
+ * Copyright (C) 2010  Sergey Gridassov <grindars@gmail.com>,
+ *                     Peter Zotov <whitequark@whitequark.org>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,6 +37,7 @@
 typedef struct {
 	void *usb;
 	uint32_t type;
+	uint32_t total_sdram_size;
 
 	const ingenic_callbacks_t *callbacks;
 	void *callbacks_data;
@@ -200,7 +202,10 @@ int ingenic_rebuild(void *hndl) {
 	CFGOPT("START", start, 1);
 	CFGOPT("SIZE", size, 1);
 
-
+	handle->total_sdram_size = (uint32_t)
+		(2 << (handle->cfg.row_addr + handle->cfg.col_addr - 1)) * 2
+		* (handle->cfg.bank_num + 1) * 2
+		* (2 - handle->cfg.bus_width);
 
 	debug(LEVEL_DEBUG, "Firmware configuration dump:\n");
 
@@ -231,6 +236,12 @@ int ingenic_loadstage(void *hndl, int id, const char *file) {
 	case INGENIC_STAGE1:
 		base = SDRAM_BASE + STAGE1_BASE;
 		cmd = VR_PROGRAM_START1;
+
+		break;
+
+	case INGENIC_STAGE2:
+		base = SDRAM_BASE + handle->total_sdram_size - STAGE2_CODESIZE;
+		cmd = VR_PROGRAM_START2;
 
 		break;
 
@@ -274,6 +285,15 @@ int ingenic_loadstage(void *hndl, int id, const char *file) {
 		return -1;
 
 	debug(LEVEL_DEBUG, "Ingenic: stage written\n");
+
+	if(id == INGENIC_STAGE2) {
+		debug(LEVEL_DEBUG, "Ingenic: flushing cache\n");
+
+		ret = usbdev_vendor(handle->usb, USBDEV_TODEV, VR_FLUSH_CACHES, 0, 0, 0, 0);
+
+		if(ret == -1)
+			return -1;
+	}
 
 	debug(LEVEL_DEBUG, "Starting stage!\n");
 
