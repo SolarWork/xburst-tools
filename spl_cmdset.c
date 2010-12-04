@@ -49,9 +49,47 @@ static int spl_load_stage1() {
 static int spl_memtest(int argc, char *argv[]) {
 	if(argc != 1 && argc != 3) {
 		printf("Usage: %s [BASE <SIZE>]\n", argv[0]);
+
+		return -1;
 	}
 
-	return spl_load_stage1(); // TODO
+	char *old_debugops = strdup(cfg_getenv("DEBUGOPS")),
+	     *old_start    = strdup(cfg_getenv("PINNUM")),
+	     *old_size     = strdup(cfg_getenv("SIZE"));
+
+	cfg_setenv("DEBUGOPS", SPL_DEBUG_MEMTEST);
+
+	if(argc == 3) {
+		cfg_setenv("START", argv[1]);
+		cfg_setenv("SIZE", argv[2]);
+
+	} else {
+		char tmp[20];
+		snprintf(tmp, 20, "%d", SDRAM_BASE);
+
+		cfg_setenv("START", tmp);
+		cfg_setenv("SIZE", cfg_getenv("SDRAM_SIZE"));
+	}
+
+	int ret = 0;
+
+	ret = shell_execute("rebuildcfg");
+
+	if(ret == -1)
+		goto finally;
+
+	ret = spl_load_stage1();
+
+finally:
+	cfg_setenv("DEBUGOPS", old_debugops);
+	cfg_setenv("START", old_start);
+	cfg_setenv("SIZE", old_size);
+
+	free(old_debugops);
+	free(old_start);
+	free(old_size);
+
+	return ret;
 }
 
 static int spl_gpio(int argc, char *argv[]) {

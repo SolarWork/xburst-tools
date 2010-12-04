@@ -207,6 +207,10 @@ int ingenic_rebuild(void *hndl) {
 		* (handle->cfg.bank_num + 1) * 2
 		* (2 - handle->cfg.bus_width);
 
+	char tmp[20];
+	snprintf(tmp, 20, "%d", handle->total_sdram_size);
+	cfg_setenv("SDRAM_SIZE", tmp);
+
 	debug(LEVEL_DEBUG, "Firmware configuration dump:\n");
 
 	hexdump(&handle->cfg, sizeof(firmware_config_t));
