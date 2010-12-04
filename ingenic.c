@@ -253,8 +253,11 @@ int ingenic_loadstage(void *hndl, int id, const char *file) {
 
 	FILE *fd = fopen(file, "rb");
 
-	if(fd == NULL)
+	if(fd == NULL) {
+		debug(LEVEL_ERROR, "Ingenic: cannot load file `%s'\n", file);
+
 		return -1;
+	}
 
 	fseek(fd, 0, SEEK_END);
 	int size = ftell(fd);

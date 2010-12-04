@@ -34,6 +34,12 @@ const shell_command_t spl_cmdset[] = {
 };
 
 static int spl_load_stage1() {
+	if(cfg_getenv("STAGE1_FILE") == NULL) {
+		printf("Variable STAGE1_FILE is not set\n");
+
+		return -1;
+	}
+
 	return ingenic_loadstage(shell_device(), INGENIC_STAGE1, cfg_getenv("STAGE1_FILE"));
 }
 
@@ -56,6 +62,12 @@ static int spl_boot(int argc, char *argv[]) {
 
 	if(ret == -1)
 		return -1;
+
+	if(cfg_getenv("STAGE2_FILE") == NULL) {
+		printf("Variable STAGE2_FILE is not set\n");
+
+		return -1;
+	}
 
 	return ingenic_loadstage(shell_device(), INGENIC_STAGE2, cfg_getenv("STAGE2_FILE"));
 }

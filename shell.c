@@ -292,7 +292,7 @@ static int builtin_exit(int argc, char *argv[]) {
 }
 
 static int builtin_source(int argc, char *argv[]) {
-	if(argc < 2) {
+	if(argc != 2) {
 		printf("Usage: %s <FILENAME>\n", argv[0]);
 
 		return -1;
@@ -322,6 +322,12 @@ static int builtin_echo(int argc, char *argv[]) {
 }
 
 static int builtin_redetect(int argc, char *argv[]) {
+	if(argc != 1) {
+		printf("Usage: %s\n", argv[0]);
+
+		return -1;
+	}
+
 	if(ingenic_redetect(device) == -1) {
 		perror("ingenic_redetect");
 
@@ -339,9 +345,13 @@ static int builtin_set(int argc, char *argv[]) {
 	} else if(argc == 2) {
 		cfg_unsetenv(argv[1]);
 
-	} else if(argc >= 3) {
+	} else if(argc == 3) {
 		cfg_setenv(argv[1], argv[2]);
 
+	} else {
+		printf("Usage: %s [VARIABLE] [VALUE]\n", argv[0]);
+
+		return -1;
 	}
 
 	return 0;
@@ -349,6 +359,12 @@ static int builtin_set(int argc, char *argv[]) {
 
 
 static int builtin_rebuildcfg(int argc, char *argv[]) {
+	if(argc != 1) {
+		printf("Usage: %s\n", argv[0]);
+
+		return -1;
+	}
+
 	return ingenic_rebuild(device);
 }
 
