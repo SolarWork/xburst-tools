@@ -24,6 +24,7 @@
 #include <readline/history.h>
 #endif
 #include <stdlib.h>
+#include <unistd.h>
 #include <errno.h>
 
 #include "shell.h"
@@ -42,6 +43,7 @@ static int builtin_help(int argc, char *argv[]);
 static int builtin_exit(int argc, char *argv[]);
 static int builtin_source(int argc, char *argv[]);
 static int builtin_echo(int argc, char *argv[]);
+static int builtin_sleep(int argc, char *argv[]);
 static int builtin_redetect(int argc, char *argv[]);
 static int builtin_rebuildcfg(int argc, char *argv[]);
 static int builtin_set(int argc, char *argv[]);
@@ -51,6 +53,7 @@ static const shell_command_t commands[] = {
 	{ "exit", "- Batch: stop current script, interactive: end session", builtin_exit },
 	{ "source", "<FILENAME> - run specified script", builtin_source },
 	{ "echo", "<STRING> - output specified string", builtin_echo },
+	{ "sleep", "<MILLISECONDS> - sleep a specified amount of time", builtin_sleep },
 	{ "set", "[VARIABLE] [VALUE] - print or set configuraton variables", builtin_set },
 
 	{ "redetect", " - Redetect CPU", builtin_redetect },
@@ -317,6 +320,20 @@ static int builtin_echo(int argc, char *argv[]) {
 	}
 
 	puts(argv[1]);
+
+	return 0;
+}
+
+static int builtin_sleep(int argc, char *argv[]) {
+	if(argc != 2) {
+		printf("Usage: %s <MILLISECONDS>\n", argv[0]);
+
+		return -1;
+	}
+
+	uint32_t ms = atoi(argv[1]);
+
+	usleep(ms * 1000);
 
 	return 0;
 }
