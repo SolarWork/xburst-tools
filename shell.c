@@ -394,7 +394,8 @@ static const struct {
 	const char *name;
 	const shell_command_t *commands;
 } cmdsets[] = {
-	{ CMDSET_SPL, "SPL", spl_cmdset },
+	{ CMDSET_SPL,     "SPL",     spl_cmdset },
+	{ CMDSET_USBBOOT, "USBBoot", usbboot_cmdset },
 	{ 0,          NULL,  NULL }
 };
 
