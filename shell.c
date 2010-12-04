@@ -238,7 +238,7 @@ void shell_interactive() {
 #ifndef WITH_READLINE
 	char *line;
 
-	while(1) {
+	while(!shell_exit) {
 		fputs("jzboot> ", stdout);
 		fflush(stdout);
 
