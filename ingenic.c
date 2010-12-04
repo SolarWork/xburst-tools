@@ -215,8 +215,6 @@ uint32_t ingenic_sdram_size(void *hndl) {
 }
 
 static int ingenic_address(void *usb, uint32_t base) {
-	debug(LEVEL_DEBUG, "Ingenic: address 0x%08X\n", base);
-
 	return usbdev_vendor(usb, USBDEV_TODEV, VR_SET_DATA_ADDRESS, (base >> 16), base & 0xFFFF, 0, 0);
 }
 
@@ -285,15 +283,11 @@ int ingenic_loadstage(void *hndl, int id, const char *file) {
 
 	memcpy(data + 8, &handle->cfg, sizeof(firmware_config_t));
 
-	debug(LEVEL_DEBUG, "Ingenic: loading stage%d to 0x%08X, %d bytes\n", id, base, size);
-
 	if(ingenic_address(handle->usb, base) == -1) {
 		free(data);
 
 		return -1;
 	}
-
-	hexdump(data, size);
 
 	int ret = usbdev_sendbulk(handle->usb, data, size);
 
@@ -302,24 +296,55 @@ int ingenic_loadstage(void *hndl, int id, const char *file) {
 	if(ret == -1)
 		return -1;
 
-	debug(LEVEL_DEBUG, "Ingenic: stage written\n");
-
 	if(id == INGENIC_STAGE2) {
-		debug(LEVEL_DEBUG, "Ingenic: flushing cache\n");
-
 		ret = usbdev_vendor(handle->usb, USBDEV_TODEV, VR_FLUSH_CACHES, 0, 0, 0, 0);
 
 		if(ret == -1)
 			return -1;
 	}
 
-	debug(LEVEL_DEBUG, "Starting stage!\n");
-
 	ret = usbdev_vendor(handle->usb, USBDEV_TODEV, cmd, (base >> 16), base & 0xFFFF, 0, 0);
 
 	if(ret == -1)
 		return -1;
 
-	return ingenic_redetect(hndl);
+	if(id == INGENIC_STAGE2)
+		return ingenic_redetect(hndl);
+	else
+		return 0;
+}
+
+int ingenic_memtest(void *hndl, const char *filename, uint32_t base, uint32_t size, uint32_t *fail) {
+	HANDLE;
+
+	int ret = ingenic_stage1_debugop(handle, filename, STAGE1_DEBUG_MEMTEST, 0, base, size);
+
+	if(ret == -1)
+		return -1;
+
+	uint32_t data[2];
+
+	ret = usbdev_recvbulk(handle->usb, &data, sizeof(data));
+
+	if(ret == -1)
+		return -1;
+
+	hexdump(data, ret);
+
+	if(ret < 4) {
+		errno = EIO;
+
+		return -1;
+	}
+
+	if(data[0] != 0) {
+		errno = EFAULT;
+
+		*fail = data[0];
+
+		return -1;
+	}
+
+	return 0;
 }
 

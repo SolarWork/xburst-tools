@@ -1,6 +1,7 @@
 /*
  * JzBoot: an USB bootloader for JZ series of Ingenic(R) microprocessors.
- * Copyright (C) 2010  Sergey Gridassov <grindars@gmail.com>
+ * Copyright (C) 2010  Sergey Gridassov <grindars@gmail.com>,
+ *                     Peter Zotov <whitequark@whitequark.org>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -141,6 +142,16 @@ int usbdev_sendbulk(void *hndl, void *data, int size) {
 	debug(LEVEL_DEBUG, "Bulk: writing data %p, size %d\n", data, size);
 
 	return translate_libusb(libusb_bulk_transfer(hndl, ENDPOINT_OUT, data, size, &trans, CONTROL_TIMEOUT));
+}
+
+int usbdev_recvbulk(void *hndl, void *data, int size) {
+	int trans;
+
+	debug(LEVEL_DEBUG, "Bulk: reading data %p, size %d\n", data, size);
+
+	int ret =  translate_libusb(libusb_bulk_transfer(hndl, ENDPOINT_IN, data, size, &trans, CONTROL_TIMEOUT));
+
+	return ret == -1 ? -1 : trans;
 }
 
 static int translate_libusb(int code) {

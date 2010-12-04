@@ -20,6 +20,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
 
 #include "shell.h"
 #include "config.h"
@@ -54,9 +55,42 @@ static int spl_stage1_op(uint32_t op, uint32_t pin, uint32_t base, uint32_t size
 static int spl_memtest(int argc, char *argv[]) {
 	if(argc != 1 && argc != 3) {
 		printf("Usage: %s [BASE <SIZE>]\n", argv[0]);
+
+		return -1;
 	}
 
-	return spl_stage1_op(STAGE1_DEBUG_BOOT, 0, 0, 0); // TODO
+	uint32_t start, size;
+
+	if(argc == 3) {
+		start = strtoul(argv[1], NULL, 0);
+		size = strtoul(argv[2], NULL, 0);
+	} else {
+		start = SDRAM_BASE;
+		size = ingenic_sdram_size(shell_device());
+	}
+
+	if(cfg_getenv("STAGE1_FILE") == NULL) {
+		printf("Variable STAGE1_FILE is not set\n");
+
+		return -1;
+	}
+
+	uint32_t fail;
+
+	int ret = ingenic_memtest(shell_device(), cfg_getenv("STAGE1_FILE"), start, size, &fail);
+
+	if(ret == -1) {
+		if(errno == EFAULT) {
+			printf("Memory test failed at address 0x%08X\n", fail);
+		} else {
+			perror("ingenic_memtest");
+		}
+
+	} else {
+		printf("Memory test passed\n");
+	}
+
+	return ret;
 }
 
 static int spl_gpio(int argc, char *argv[]) {

@@ -33,6 +33,7 @@ uint32_t ingenic_sdram_size(void *hndl);
 int ingenic_rebuild(void *hndl);
 int ingenic_loadstage(void *hndl, int id, const char *filename);
 int ingenic_stage1_debugop(void *device, const char *filename, uint32_t op, uint32_t pin, uint32_t base, uint32_t size);
+int ingenic_memtest(void *hndl, const char *filename, uint32_t base, uint32_t size, uint32_t *fail);
 
 #define CMDSET_SPL	1
 #define CMDSET_USBBOOT	2
