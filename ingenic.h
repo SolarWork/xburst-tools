@@ -138,5 +138,6 @@ int ingenic_query_nand(void *hndl, int cs, nand_info_t *info);
 int ingenic_dump_nand(void *hndl, int cs, int start, int pages, int type, const char *filename);
 int ingenic_program_nand(void *hndl, int cs, int start, int type, const char *filename);
 int ingenic_erase_nand(void *hndl, int cs, int start, int blocks);
+int ingenic_load_nand(void *hndl, int cs, int start, int pages, uint32_t base);
 
 #endif

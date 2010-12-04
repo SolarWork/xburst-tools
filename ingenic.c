@@ -391,8 +391,13 @@ int ingenic_load_sdram(void *hndl, void *data, uint32_t base, uint32_t size) {
 	HANDLE;
 
 	while(size) {
-		int block = size > 65535 ? 65535 : size;
+		int block = size > STAGE2_IOBUF ? STAGE2_IOBUF : size;
 
+		printf("Loading %d bytes from %p to 0x%08X\n", block, data, base);
+		
+		if(usbdev_sendbulk(handle->usb, data, block) == -1)
+			return -1;
+		
 		if(ingenic_wordop(handle->usb, VR_SET_DATA_ADDRESS, base) == -1)
 			return -1;
 
@@ -400,25 +405,20 @@ int ingenic_load_sdram(void *hndl, void *data, uint32_t base, uint32_t size) {
 			return -1;
 
 
-		if(usbdev_sendbulk(handle->usb, data, block) == -1)
-			return -1;
-		
-
-
 		if(usbdev_vendor(handle->usb, USBDEV_TODEV, VR_SDRAM_OPS, SDRAM_LOAD, 0, 0, 0) == -1)
 			return -1;
 
 		uint32_t result[8];
 
-		if(usbdev_recvbulk(handle->usb, result, sizeof(result)) == -1)
+		int ret = usbdev_recvbulk(handle->usb, result, sizeof(result));
+		if(ret == -1)
 			return -1;
+		
+		hexdump(result, ret);
 
-		data += 65535;
-		base += 65535;
-		if(size <= 65535)
-			break;
-
-		size -= 65535;
+		data += block;
+		base += block;
+		size -= block;
 	}
 	debug(LEVEL_DEBUG, "Load done\n");
 
@@ -452,6 +452,8 @@ int ingenic_load_sdram_file(void *hndl, uint32_t base, const char *file) {
 int ingenic_go(void *hndl, uint32_t address) {
 	HANDLE;
 
+	debug(LEVEL_DEBUG, "Go to 0x%08X\n", address);
+	
 	return ingenic_wordop(handle->usb, VR_PROGRAM_START2, address);
 }
 
@@ -662,4 +664,27 @@ int ingenic_program_nand(void *hndl, int cs, int start, int type, const char *fi
 	fclose(in);
 	
 	return ret;
+}
+
+int ingenic_load_nand(void *hndl, int cs, int start, int pages, uint32_t base) {
+	HANDLE;
+	
+	if(ingenic_wordop(handle->usb, VR_PROGRAM_START1, base) == -1)
+		return -1;
+	
+	if(ingenic_wordop(handle->usb, VR_SET_DATA_ADDRESS, start) == -1)
+		return -1;
+	
+	if(ingenic_wordop(handle->usb, VR_SET_DATA_LENGTH, pages) == -1)
+		return -1;	
+	
+	if(ingenic_nandop(handle->usb, cs, NAND_READ_TO_RAM, 0) == -1)
+		return -1;
+	
+	uint16_t result[4];
+		
+	if(usbdev_recvbulk(handle->usb, result, sizeof(result)) == -1)
+		return -1;
+	
+	return 0;
 }

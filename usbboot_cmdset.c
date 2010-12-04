@@ -32,6 +32,7 @@ static int usbboot_nquery(int argc, char *argv[]);
 static int usbboot_ndump(int argc, char *argv[]);
 static int usbboot_nerase(int argc, char *argv[]);
 static int usbboot_nprogram(int argc, char *argv[]);
+static int usbboot_nload(int argc, char *argv[]);
 
 const shell_command_t usbboot_cmdset[] = {
 
@@ -45,6 +46,7 @@ const shell_command_t usbboot_cmdset[] = {
 	{ "nerase", "<DEVICE> <STARTBLOCK> <BLOCKS> - Erase NAND blocks", usbboot_nerase },
 	{ "nprogram", "<DEVICE> <STARTPAGE> <FILE> - Program NAND from file", usbboot_nprogram },
 	{ "nprogram_oob", "<DEVICE> <STARTPAGE> <FILE> - Program NAND with OOB from file", usbboot_nprogram },
+	{ "nload", "<DEVICE> <STARTPAGE> <PAGES> <BASE> - Load NAND data to SDRAM", usbboot_nload },
 	
 	{ NULL, NULL, NULL }
 };
@@ -174,6 +176,21 @@ static int usbboot_nprogram(int argc, char *argv[]) {
 	
 	if(ret == -1)
 		perror("ingenic_program_nand");
+	
+	return ret;
+}
+
+static int usbboot_nload(int argc, char *argv[]) {
+	if(argc != 5) {
+		printf("Usage: %s <DEVICE> <STARTPAGE> <PAGES> <BASE>\n", argv[0]);
+		
+		return -1;
+	}
+	
+	int ret = ingenic_load_nand(shell_device(), atoi(argv[1]), atoi(argv[2]), atoi(argv[3]), strtoul(argv[4], NULL, 0));
+	
+	if(ret == -1)
+		perror("ingenic_load_nand");
 	
 	return ret;
 }
