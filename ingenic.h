@@ -28,6 +28,7 @@ void ingenic_set_callbacks(void *hndl, const ingenic_callbacks_t *callbacks, voi
 int ingenic_redetect(void *hndl);
 int ingenic_cmdset(void *hndl);
 int ingenic_type(void *hndl);
+uint32_t ingenic_sdram_size(void *hndl);
 
 int ingenic_rebuild(void *hndl);
 int ingenic_loadstage(void *hndl, int id, const char *filename);

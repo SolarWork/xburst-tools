@@ -97,12 +97,8 @@ static void hexdump(const void *data, size_t size) {
 static uint32_t ingenic_probe(void *usb_hndl) {
 	char magic[9];
 
-	if(usbdev_vendor(usb_hndl, USBDEV_FROMDEV, VR_GET_CPU_INFO, 0, 0, magic, 8) == -1) {
-		if(errno == EFAULT) {
-			debug(LEVEL_DEBUG, "Stage detected\n");
-		} else
+	if(usbdev_vendor(usb_hndl, USBDEV_FROMDEV, VR_GET_CPU_INFO, 0, 0, magic, 8) == -1)
 			return 0;
-	}
 
 	magic[8] = 0;
 
@@ -210,6 +206,12 @@ int ingenic_rebuild(void *hndl) {
 	hexdump(&handle->cfg, sizeof(firmware_config_t));
 
 	return 0;
+}
+
+uint32_t ingenic_sdram_size(void *hndl) {
+	HANDLE;
+
+	return handle->total_sdram_size;
 }
 
 static int ingenic_address(void *usb, uint32_t base) {
