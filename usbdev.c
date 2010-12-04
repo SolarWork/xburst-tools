@@ -24,7 +24,7 @@
 #include "debug.h"
 #include "devmgr.h"
 
-#define CONTROL_TIMEOUT 1000
+#define CONTROL_TIMEOUT 5000
 
 static libusb_context *ctx = NULL;
 

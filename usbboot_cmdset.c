@@ -23,6 +23,20 @@
 #include "config.h"
 #include "ingenic.h"
 
+static int usbboot_boot(int argc, char *argv[]);
+
 const shell_command_t usbboot_cmdset[] = {
+	{ "boot", "- Reconfigure stage2", usbboot_boot },
+
 	{ NULL, NULL, NULL }
 };
+
+static int usbboot_boot(int argc, char *argv[]) {
+	int ret = ingenic_configure_stage2(shell_device());
+
+	if(ret == -1)
+		perror("ingenic_configure_stage2");
+
+	return ret;
+}
+

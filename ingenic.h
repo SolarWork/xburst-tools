@@ -35,6 +35,8 @@ int ingenic_loadstage(void *hndl, int id, const char *filename);
 int ingenic_stage1_debugop(void *device, const char *filename, uint32_t op, uint32_t pin, uint32_t base, uint32_t size);
 int ingenic_memtest(void *hndl, const char *filename, uint32_t base, uint32_t size, uint32_t *fail);
 
+int ingenic_configure_stage2(void *hndl);
+
 #define CMDSET_SPL	1
 #define CMDSET_USBBOOT	2
 
@@ -50,13 +52,15 @@ int ingenic_memtest(void *hndl, const char *filename, uint32_t base, uint32_t si
 #define STAGE2_CODESIZE	0x400000
 #define SDRAM_BASE	0x80000000
 
+#define DS_flash_info 0
+#define DS_hand	1
 typedef struct {
 	/* debug args */
 	uint8_t debug_ops;
 	uint8_t pin_num;
 	uint32_t start;
 	uint32_t size;
-} ingenic_stage1_debug_t;
+} __attribute__((packed)) ingenic_stage1_debug_t;
 
 typedef struct {
 	/* CPU ID */
@@ -79,5 +83,24 @@ typedef struct {
 
 	ingenic_stage1_debug_t debug;
 } __attribute__((packed)) firmware_config_t;
+
+typedef struct {
+	/* nand flash info */
+	uint32_t cpuid; /* cpu type */
+	uint32_t nand_bw;		/* bus width */
+	uint32_t nand_rc;		/* row cycle */
+	uint32_t nand_ps;		/* page size */
+	uint32_t nand_ppb;		/* page number per block */
+	uint32_t nand_force_erase;
+	uint32_t nand_pn;		/* page number in total */
+	uint32_t nand_os;		/* oob size */
+	uint32_t nand_eccpos;
+	uint32_t nand_bbpage;
+	uint32_t nand_bbpos;
+	uint32_t nand_plane;
+	uint32_t nand_bchbit;
+	uint32_t nand_wppin;
+	uint32_t nand_bpc;		/* block number per chip */
+} nand_config_t;
 
 #endif

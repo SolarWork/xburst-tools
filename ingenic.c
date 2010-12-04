@@ -43,6 +43,7 @@ typedef struct {
 	void *callbacks_data;
 
 	firmware_config_t cfg;
+	nand_config_t nand;
 } ingenic_handle_t;
 
 static const struct {
@@ -173,6 +174,8 @@ void ingenic_close(void *hndl) {
 
 #define CFGOPT(name, var, exp) { char *str = cfg_getenv(name); if(str == NULL) { debug(LEVEL_ERROR, "%s is not set\n", name); errno = EINVAL; return -1; }; int v = atoi(str); if(!(exp)) { debug(LEVEL_ERROR, "%s must be in %s\n", name, #exp); return -1; }; handle->cfg.var = v; }
 
+#define NOPT(name, var, exp) { char *str = cfg_getenv("NAND_" name); if(str == NULL) { debug(LEVEL_ERROR, "%s is not set\n", "NAND_" name); errno = EINVAL; return -1; }; int v = atoi(str); if(!(exp)) { debug(LEVEL_ERROR, "%s must be in %s\n", "NAND_" name, #exp); return -1; }; handle->nand.nand_##var = v; }
+
 int ingenic_rebuild(void *hndl) {
 	HANDLE;
 
@@ -204,6 +207,27 @@ int ingenic_rebuild(void *hndl) {
 	debug(LEVEL_DEBUG, "Firmware configuration dump:\n");
 
 	hexdump(&handle->cfg, sizeof(firmware_config_t));
+
+	handle->nand.cpuid = CPUID(handle->type);
+
+	NOPT("BUSWIDTH", bw, 1);
+	NOPT("ROWCYCLES", rc, 1);
+	NOPT("PAGESIZE", ps, 1);
+	NOPT("PAGEPERBLOCK", ppb, 1);
+	NOPT("FORCEERASE", force_erase, 1);
+// FIXME: pn is not set by xburst-tools usbboot. Is this intended?
+	NOPT("OOBSIZE", os, 1);
+	NOPT("ECCPOS", eccpos, 1);
+	NOPT("BADBLOCKPOS", bbpos, 1);
+	NOPT("BADBLOCKPAGE", bbpage, 1);
+	NOPT("PLANENUM", plane, 1);
+	NOPT("BCHBIT", bchbit, 1);
+	NOPT("WPPIN", wppin, 1);
+	NOPT("BLOCKPERCHIP", bpc, 1);
+
+	debug(LEVEL_DEBUG, "NAND configuration dump:\n");
+
+	hexdump(&handle->nand, sizeof(nand_config_t));
 
 	return 0;
 }
@@ -344,6 +368,37 @@ int ingenic_memtest(void *hndl, const char *filename, uint32_t base, uint32_t si
 
 		return -1;
 	}
+
+	return 0;
+}
+
+int ingenic_configure_stage2(void *hndl) {
+	HANDLE;
+
+// DS_flash_info (nand_config_t only) is not implemented in stage2, so using DS_hand (nand_config_t + firmware_config_t)
+	uint8_t *hand = malloc(sizeof(nand_config_t) + sizeof(firmware_config_t));
+
+	memcpy(hand, &handle->nand, sizeof(nand_config_t));
+	memcpy(hand + sizeof(nand_config_t), &handle->cfg, sizeof(firmware_config_t));
+
+	int ret = usbdev_sendbulk(handle->usb, hand, sizeof(nand_config_t) + sizeof(firmware_config_t));
+
+	free(hand);
+
+	if(ret == -1)
+		return -1;
+
+	if(usbdev_vendor(handle->usb, USBDEV_TODEV, VR_CONFIGRATION, DS_hand, 0, 0, 0) == -1)
+		return -1;
+
+	uint32_t result[8];
+
+	ret = usbdev_recvbulk(handle->usb, result, sizeof(result));
+
+	if(ret == -1)
+		return -1;
+
+	debug(LEVEL_DEBUG, "Stage2 configured\n");
 
 	return 0;
 }

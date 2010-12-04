@@ -157,6 +157,10 @@ int main(int argc, char *argv[]) {
 	if(config)
 		if(shell_source(config) == -1) {
 			perror("shell_source");
+
+			ret = 1;
+
+			goto exit_shell;
 		}
 
 	if(cmd != NULL) {
@@ -175,6 +179,7 @@ int main(int argc, char *argv[]) {
 	} else
 		shell_interactive();
 
+exit_shell:
 	shell_fini();
 
 exit_ingenic:

@@ -47,6 +47,7 @@ static int builtin_sleep(int argc, char *argv[]);
 static int builtin_redetect(int argc, char *argv[]);
 static int builtin_rebuildcfg(int argc, char *argv[]);
 static int builtin_set(int argc, char *argv[]);
+static int builtin_safe(int argc, char *argv[]);
 
 static const shell_command_t commands[] = {
 	{ "help", "- Display this message", builtin_help },
@@ -55,6 +56,7 @@ static const shell_command_t commands[] = {
 	{ "echo", "<STRING> - output specified string", builtin_echo },
 	{ "sleep", "<MILLISECONDS> - sleep a specified amount of time", builtin_sleep },
 	{ "set", "[VARIABLE] [VALUE] - print or set configuraton variables", builtin_set },
+	{ "safe", "<COMMAND> [ARG]... - run command ignoring errors", builtin_safe },
 
 	{ "redetect", " - Redetect CPU", builtin_redetect },
 	{ "rebuildcfg", " - Rebuild firmware configuration data", builtin_rebuildcfg },
@@ -387,6 +389,19 @@ static int builtin_rebuildcfg(int argc, char *argv[]) {
 	}
 
 	return ingenic_rebuild(device);
+}
+
+static int builtin_safe(int argc, char *argv[]) {
+	if(argc < 2) {
+		printf("Usage: %s <COMMAND> [ARG]...\n", argv[0]);
+
+		return -1;
+	}
+
+	if(shell_run(argc - 1, argv + 1) == -1)
+		perror("shell_run");
+
+	return 0;
 }
 
 static const struct {

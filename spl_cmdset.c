@@ -122,8 +122,16 @@ static int spl_boot(int argc, char *argv[]) {
 
 	ret = ingenic_loadstage(shell_device(), INGENIC_STAGE2, cfg_getenv("STAGE2_FILE"));
 
-	if(ret == -1)
+	if(ret == -1) {
 		perror("ingenic_loadstage");
+
+		return -1;
+	}
+
+	ret = ingenic_configure_stage2(shell_device());
+
+	if(ret == -1)
+		perror("ingenic_configure_stage2");
 
 	return ret;
 }
