@@ -31,6 +31,7 @@ int ingenic_type(void *hndl);
 
 int ingenic_rebuild(void *hndl);
 int ingenic_loadstage(void *hndl, int id, const char *filename);
+int ingenic_stage1_debugop(void *device, const char *filename, uint32_t op, uint32_t pin, uint32_t base, uint32_t size);
 
 #define CMDSET_SPL	1
 #define CMDSET_USBBOOT	2
@@ -38,13 +39,22 @@ int ingenic_loadstage(void *hndl, int id, const char *filename);
 #define INGENIC_STAGE1	1
 #define INGENIC_STAGE2	2
 
-#define SPL_DEBUG_MEMTEST	"1"
-#define SPL_DEBUG_GPIO_SET	"2"
-#define SPL_DEBUG_GPIO_CLEAR	"3"
+#define STAGE1_DEBUG_BOOT		0
+#define STAGE1_DEBUG_MEMTEST		1
+#define STAGE1_DEBUG_GPIO_SET		2
+#define STAGE1_DEBUG_GPIO_CLEAR		3
 
 #define STAGE1_BASE	0x2000
 #define STAGE2_CODESIZE	0x400000
 #define SDRAM_BASE	0x80000000
+
+typedef struct {
+	/* debug args */
+	uint8_t debug_ops;
+	uint8_t pin_num;
+	uint32_t start;
+	uint32_t size;
+} ingenic_stage1_debug_t;
 
 typedef struct {
 	/* CPU ID */
@@ -65,11 +75,7 @@ typedef struct {
 	uint8_t is_mobile;
 	uint8_t is_busshare;
 
-	/* debug args */
-	uint8_t debug_ops;
-	uint8_t pin_num;
-	uint32_t start;
-	uint32_t size;
+	ingenic_stage1_debug_t debug;
 } __attribute__((packed)) firmware_config_t;
 
 #endif

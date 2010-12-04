@@ -304,7 +304,7 @@ static int builtin_source(int argc, char *argv[]) {
 	int ret = shell_source(argv[1]);
 
 	if(ret == -1) {
-		printf("Error while sourcing file %s\n", argv[1]);
+		fprintf(stderr, "Error while sourcing file %s: %s\n", argv[1], strerror(errno));
 	}
 
 	shell_exit = 0;
@@ -320,14 +320,9 @@ static int builtin_echo(int argc, char *argv[]) {
 	}
 
 	for(int i = 1; i < argc; i++) {
-		printf("%s", argv[i]);
+		fputs(argv[i], stdout);
 
-		if(i < argc - 1) {
-			printf(" ");
-
-		} else {
-			printf("\n");
-		}
+		putchar((i < argc - 1) ? ' ' : '\n');
 	}
 
 	return 0;

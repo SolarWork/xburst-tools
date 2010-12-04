@@ -180,7 +180,7 @@ void ingenic_close(void *hndl) {
 int ingenic_rebuild(void *hndl) {
 	HANDLE;
 
-	handle->cfg.cpu_id = 0x4750; //CPUID(handle->type);
+	handle->cfg.cpu_id = CPUID(handle->type);
 
 	CFGOPT("EXTCLK", ext_clk, v <= 27 && v >= 12);
 	CFGOPT("CPUSPEED", cpu_speed, (v % 12) == 0);
@@ -197,10 +197,8 @@ int ingenic_rebuild(void *hndl) {
 	CFGOPT("SDRAM_COLADDR", col_addr, 1);
 	CFGOPT("SDRAM_ISMOBILE", is_mobile, v == 0 || v == 1);
 	CFGOPT("SDRAM_ISBUSSHARE", is_busshare, v == 0 || v == 1);
-	CFGOPT("DEBUGOPS", debug_ops, 1);
-	CFGOPT("PINNUM", pin_num, 1);
-	CFGOPT("START", start, 1);
-	CFGOPT("SIZE", size, 1);
+
+	memset(&handle->cfg.debug, 0, sizeof(ingenic_stage1_debug_t));
 
 	handle->total_sdram_size = (uint32_t)
 		(2 << (handle->cfg.row_addr + handle->cfg.col_addr - 1)) * 2
@@ -218,6 +216,24 @@ static int ingenic_address(void *usb, uint32_t base) {
 	debug(LEVEL_DEBUG, "Ingenic: address 0x%08X\n", base);
 
 	return usbdev_vendor(usb, USBDEV_TODEV, VR_SET_DATA_ADDRESS, (base >> 16), base & 0xFFFF, 0, 0);
+}
+
+int ingenic_stage1_debugop(void *hndl, const char *filename, uint32_t op, uint32_t pin, uint32_t base, uint32_t size) {
+	HANDLE;
+
+	handle->cfg.debug.debug_ops = op;
+	handle->cfg.debug.pin_num = pin;
+	handle->cfg.debug.start = base;
+	handle->cfg.debug.size = size;
+
+	debug(LEVEL_DEBUG, "Debug configuration dump:\n");
+	hexdump(&handle->cfg, sizeof(firmware_config_t));
+
+	int ret = ingenic_loadstage(handle, INGENIC_STAGE1, filename);
+
+	memset(&handle->cfg.debug, 0, sizeof(ingenic_stage1_debug_t));
+
+	return ret;
 }
 
 int ingenic_loadstage(void *hndl, int id, const char *file) {
@@ -253,11 +269,8 @@ int ingenic_loadstage(void *hndl, int id, const char *file) {
 
 	FILE *fd = fopen(file, "rb");
 
-	if(fd == NULL) {
-		debug(LEVEL_ERROR, "Ingenic: cannot load file `%s'\n", file);
-
+	if(fd == NULL) 
 		return -1;
-	}
 
 	fseek(fd, 0, SEEK_END);
 	int size = ftell(fd);
@@ -307,3 +320,4 @@ int ingenic_loadstage(void *hndl, int id, const char *file) {
 
 	return ingenic_redetect(hndl);
 }
+

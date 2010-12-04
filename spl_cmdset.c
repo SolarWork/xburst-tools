@@ -36,14 +36,19 @@ const shell_command_t spl_cmdset[] = {
 	{ NULL, NULL, NULL }
 };
 
-static int spl_load_stage1() {
+static int spl_stage1_op(uint32_t op, uint32_t pin, uint32_t base, uint32_t size) {
 	if(cfg_getenv("STAGE1_FILE") == NULL) {
 		printf("Variable STAGE1_FILE is not set\n");
 
 		return -1;
 	}
 
-	return ingenic_loadstage(shell_device(), INGENIC_STAGE1, cfg_getenv("STAGE1_FILE"));
+	int ret = ingenic_stage1_debugop(shell_device(), cfg_getenv("STAGE1_FILE"), op, pin, base, size);
+
+	if(ret == -1)
+		perror("ingenic_stage1_debugop");
+
+	return ret;
 }
 
 static int spl_memtest(int argc, char *argv[]) {
@@ -51,7 +56,7 @@ static int spl_memtest(int argc, char *argv[]) {
 		printf("Usage: %s [BASE <SIZE>]\n", argv[0]);
 	}
 
-	return spl_load_stage1(); // TODO
+	return spl_stage1_op(STAGE1_DEBUG_BOOT, 0, 0, 0); // TODO
 }
 
 static int spl_gpio(int argc, char *argv[]) {
@@ -62,30 +67,7 @@ static int spl_gpio(int argc, char *argv[]) {
 		return -1;
 	}
 
-	char *old_debugops = strdup(cfg_getenv("DEBUGOPS")),
-	     *old_pinnum   = strdup(cfg_getenv("PINNUM"));
-
-	cfg_setenv("DEBUGOPS", (!strcmp(argv[2], "1")) ?
-			SPL_DEBUG_GPIO_SET : SPL_DEBUG_GPIO_CLEAR);
-	cfg_setenv("PINNUM", argv[1]);
-
-	int ret = 0;
-
-	ret = shell_execute("rebuildcfg");
-
-	if(ret == -1)
-		goto finally;
-
-	ret = spl_load_stage1();
-
-finally:
-	cfg_setenv("DEBUGOPS", old_debugops);
-	cfg_setenv("PINNUM", old_pinnum);
-
-	free(old_debugops);
-	free(old_pinnum);
-
-	return ret;
+	return spl_stage1_op(!strcmp(argv[2], "1") ? STAGE1_DEBUG_GPIO_SET : STAGE1_DEBUG_GPIO_CLEAR, atoi(argv[1]), 0, 0);
 }
 
 static int spl_boot(int argc, char *argv[]) {
@@ -93,9 +75,7 @@ static int spl_boot(int argc, char *argv[]) {
 		printf("Usage: %s\n", argv[0]);
 	}
 
-	int ret;
-
-	ret = spl_load_stage1();
+	int ret = spl_stage1_op(STAGE1_DEBUG_BOOT, 0, 0, 0);
 
 	if(ret == -1)
 		return -1;
@@ -106,5 +86,11 @@ static int spl_boot(int argc, char *argv[]) {
 		return -1;
 	}
 
-	return ingenic_loadstage(shell_device(), INGENIC_STAGE2, cfg_getenv("STAGE2_FILE"));
+	ret = ingenic_loadstage(shell_device(), INGENIC_STAGE2, cfg_getenv("STAGE2_FILE"));
+
+	if(ret == -1)
+		perror("ingenic_loadstage");
+
+	return ret;
 }
+
