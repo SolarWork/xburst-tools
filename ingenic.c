@@ -290,9 +290,17 @@ int ingenic_loadstage(void *hndl, int id, const char *file) {
 	fseek(fd, 0, SEEK_SET);
 
 	void *data = malloc(size);
-	fread(data, size, 1, fd);
+	size_t read_bytes = fread(data, size, 1, fd);
 
 	fclose(fd);
+
+	if(read_bytes != size) {
+		free(data);
+
+		errno = EIO;
+
+		return -1;
+	}
 
 	memcpy(data + 8, &handle->cfg, sizeof(firmware_config_t));
 
@@ -452,9 +460,17 @@ int ingenic_load_sdram_file(void *hndl, uint32_t base, const char *file) {
 	fseek(fd, 0, SEEK_SET);
 
 	void *data = malloc(size);
-	fread(data, size, 1, fd);
+	size_t bytes = fread(data, size, 1, fd);
 
 	fclose(fd);
+
+	if(bytes != size) {
+		free(data);
+
+		errno = EIO;
+
+		return -1;
+	}
 
 	int ret = ingenic_load_sdram(handle, data, base, size);
 
