@@ -27,6 +27,7 @@ typedef struct shell_command {
 	const char *cmd;
 	const char *description;
 	int (*handler)(shell_context_t *ctx, int argc, char *argv[]);
+	const char *args;
 } shell_command_t;
 
 shell_context_t *shell_init(void *ingenic);

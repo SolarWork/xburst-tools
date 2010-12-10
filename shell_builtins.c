@@ -38,31 +38,60 @@ static int builtin_set(shell_context_t *ctx, int argc, char *argv[]);
 static int builtin_safe(shell_context_t *ctx, int argc, char *argv[]);
 
 const shell_command_t builtin_cmdset[] = {
-	{ "help", "- Display this message", builtin_help },
-	{ "exit", "- Batch: stop current script, interactive: end session", builtin_exit },
-	{ "source", "<FILENAME> - run specified script", builtin_source },
-	{ "echo", "<STRING> - output specified string", builtin_echo },
-	{ "sleep", "<MILLISECONDS> - sleep a specified amount of time", builtin_sleep },
-	{ "set", "[VARIABLE] [VALUE] - print or set configuraton variables", builtin_set },
-	{ "safe", "<COMMAND> [ARG]... - run command ignoring errors", builtin_safe },
+	{ "help", "Display this message", builtin_help, NULL },
+	{ "exit", "Batch: stop current script, interactive: end session", builtin_exit, NULL },
+	{ "source", "Run specified script", builtin_source, "<FILENAME>" },
+	{ "echo", "Output specified string", builtin_echo,  "<STRING> ..." },
+	{ "sleep", "Sleep a specified amount of time", builtin_sleep, "<MILLISECONDS>" },
+	{ "set", "Print or set configuraton variables", builtin_set, "[VARIABLE] [VALUE]" },
+	{ "safe", "Run command ignoring errors", builtin_safe, "<COMMAND> [ARG] ..." },
 
-	{ "redetect", " - Redetect CPU", builtin_redetect },
-	{ "rebuildcfg", " - Rebuild firmware configuration data", builtin_rebuildcfg },
+	{ "redetect", "Redetect CPU", builtin_redetect, NULL },
+	{ "rebuildcfg", "Rebuild firmware configuration data", builtin_rebuildcfg, NULL },
 
 	{ NULL, NULL, NULL }
 };
 
-static int builtin_help(shell_context_t *ctx, int argc, char *argv[]) {
-/*	for(int i = 0; commands[i].cmd != NULL; i++) {
-		printf("%s %s\n", commands[i].cmd, commands[i].description);
-	}
+static int help_maxwidth_function(shell_context_t *ctx, const shell_command_t *cmd, void *arg) {
+	int len = strlen(cmd->cmd), *maxlen = arg;
 
-	if(set_cmds) {
-		for(int i = 0; set_cmds[i].cmd != NULL; i++)
-			printf("%s %s\n", set_cmds[i].cmd, set_cmds[i].description);
-	}*/
+	if(cmd->args)
+		len += strlen(cmd->args) + 1;
+
+	if(len > *maxlen)
+		*maxlen = len;		
 
 	return 0;
+}
+
+static int help_print_function(shell_context_t *ctx, const shell_command_t *cmd, void *arg) {
+	int len = strlen(cmd->cmd), *maxlen = arg;
+
+	fputs(cmd->cmd, stdout);
+
+	if(cmd->args) {
+		len += strlen(cmd->args) + 1;
+
+		putchar(' ');
+		fputs(cmd->args, stdout);
+	}
+
+	for(int i = 0; i < *maxlen - len; i++)
+		putchar(' ');
+
+	puts(cmd->description);
+
+	return 0;
+}
+
+static int builtin_help(shell_context_t *ctx, int argc, char *argv[]) {
+	int maxwidth = 0;
+
+	shell_enumerate_commands(ctx, help_maxwidth_function, &maxwidth);
+
+	maxwidth += 2;
+
+	return shell_enumerate_commands(ctx, help_print_function, &maxwidth);
 }
 
 static int builtin_exit(shell_context_t *ctx, int argc, char *argv[]) {
@@ -72,12 +101,6 @@ static int builtin_exit(shell_context_t *ctx, int argc, char *argv[]) {
 }
 
 static int builtin_source(shell_context_t *ctx, int argc, char *argv[]) {
-	if(argc != 2) {
-		printf("Usage: %s <FILENAME>\n", argv[0]);
-
-		return -1;
-	}
-
 	int ret = shell_source(ctx, argv[1]);
 
 	if(ret == -1) {
@@ -90,12 +113,6 @@ static int builtin_source(shell_context_t *ctx, int argc, char *argv[]) {
 }
 
 static int builtin_echo(shell_context_t *ctx, int argc, char *argv[]) {
-	if(argc < 2) {
-		printf("Usage: %s <STRING>\n", argv[0]);
-
-		return -1;
-	}
-
 	for(int i = 1; i < argc; i++) {
 		fputs(argv[i], stdout);
 
@@ -106,12 +123,6 @@ static int builtin_echo(shell_context_t *ctx, int argc, char *argv[]) {
 }
 
 static int builtin_sleep(shell_context_t *ctx, int argc, char *argv[]) {
-	if(argc != 2) {
-		printf("Usage: %s <MILLISECONDS>\n", argv[0]);
-
-		return -1;
-	}
-
 	uint32_t ms = atoi(argv[1]);
 
 	usleep(ms * 1000);
@@ -120,12 +131,6 @@ static int builtin_sleep(shell_context_t *ctx, int argc, char *argv[]) {
 }
 
 static int builtin_redetect(shell_context_t *ctx, int argc, char *argv[]) {
-	if(argc != 1) {
-		printf("Usage: %s\n", argv[0]);
-
-		return -1;
-	}
-
 	if(ingenic_redetect(shell_device(ctx)) == -1) {
 		perror("ingenic_redetect");
 
@@ -147,11 +152,6 @@ static int builtin_set(shell_context_t *ctx, int argc, char *argv[]) {
 
 	} else if(argc == 3) {
 		cfg_setenv(argv[1], argv[2]);
-
-	} else {
-		printf("Usage: %s [VARIABLE] [VALUE]\n", argv[0]);
-
-		return -1;
 	}
 
 	return 0;
@@ -159,22 +159,10 @@ static int builtin_set(shell_context_t *ctx, int argc, char *argv[]) {
 
 
 static int builtin_rebuildcfg(shell_context_t *ctx, int argc, char *argv[]) {
-	if(argc != 1) {
-		printf("Usage: %s\n", argv[0]);
-
-		return -1;
-	}
-
 	return ingenic_rebuild(shell_device(ctx));
 }
 
 static int builtin_safe(shell_context_t *ctx, int argc, char *argv[]) {
-	if(argc < 2) {
-		printf("Usage: %s <COMMAND> [ARG]...\n", argv[0]);
-
-		return -1;
-	}
-
 	if(shell_run(ctx, argc - 1, argv + 1) == -1)
 		perror("shell_run");
 

@@ -88,12 +88,63 @@ static int shell_run_function(shell_context_t *ctx, const shell_command_t *cmd, 
 	shell_run_data_t *data = arg;
 
 	if(strcmp(cmd->cmd, data->argv[0]) == 0) {
-		int ret = cmd->handler(ctx, data->argc, data->argv);
+		int invalid = 0;
 
-		if(ret == 0)
-			return 1;
-		else
-			return ret;
+		if(cmd->args == NULL && data->argc != 1)
+			invalid = 1;
+		else if(cmd->args) {
+			char *dup = strdup(cmd->args), *save = dup, *ptrptr = NULL;
+
+			int pos = 1;
+			int max_tokens = 1;
+
+			for(char *token = strtok_r(dup, " ", &ptrptr); token; token = strtok_r(NULL, " ", &ptrptr)) {
+				if(strcmp(token, "...") == 0) {
+					max_tokens = -1;
+
+					break;
+				}
+
+				max_tokens++;
+
+				if(data->argc - 1 < pos) {
+					if(*token == '[') {
+						break;
+					} else if(*token == '<') {
+						invalid = 1;
+
+						break;
+					}
+				}
+
+				pos++;
+			}
+
+			if(max_tokens != -1 && data->argc > max_tokens)
+				invalid = 1;
+
+
+			free(save);
+		}
+
+		if(invalid) {
+			if(cmd->args)
+				fprintf(stderr, "Usage: %s %s\n", cmd->cmd, cmd->args);
+			else
+				fprintf(stderr, "Usage: %s\n", cmd->cmd);
+
+			errno = EINVAL;
+
+			return -1;
+
+		} else {
+			int ret = cmd->handler(ctx, data->argc, data->argv);
+
+			if(ret == 0)
+				return 1;
+			else
+				return ret;
+		}
 	} else
 		return 0;
 }

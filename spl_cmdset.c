@@ -31,10 +31,10 @@ static int spl_gpio(shell_context_t *ctx, int argc, char *argv[]);
 static int spl_boot(shell_context_t *ctx, int argc, char *argv[]);
 
 const shell_command_t spl_cmdset[] = {
-	{ "memtest", "[BASE <SIZE>] - SDRAM test", spl_memtest },
-	{ "gpio", "<PIN> <STATE> - Set GPIO #PIN to STATE 0 or 1", spl_gpio },
-	{ "boot", " - Load stage2 USB bootloader", spl_boot },
-	{ NULL, NULL, NULL }
+	{ "memtest", "SDRAM test", spl_memtest, "[BASE] <SIZE>" },
+	{ "gpio", "Set GPIO #PIN to STATE 0 or 1", spl_gpio, "<PIN> <STATE>" },
+	{ "boot", "Load stage2 USB bootloader", spl_boot, NULL },
+	{ NULL, NULL, NULL, NULL }
 };
 
 static int spl_stage1_op(shell_context_t *ctx, uint32_t op, uint32_t pin, uint32_t base, uint32_t size) {
@@ -53,12 +53,6 @@ static int spl_stage1_op(shell_context_t *ctx, uint32_t op, uint32_t pin, uint32
 }
 
 static int spl_memtest(shell_context_t *ctx, int argc, char *argv[]) {
-	if(argc != 1 && argc != 3) {
-		printf("Usage: %s [BASE <SIZE>]\n", argv[0]);
-
-		return -1;
-	}
-
 	uint32_t start, size;
 
 	if(argc == 3) {
@@ -94,7 +88,7 @@ static int spl_memtest(shell_context_t *ctx, int argc, char *argv[]) {
 }
 
 static int spl_gpio(shell_context_t *ctx, int argc, char *argv[]) {
-	if(argc != 3 || (strcmp(argv[2], "0") && strcmp(argv[2], "1"))) {
+	if(strcmp(argv[2], "0") && strcmp(argv[2], "1")) {
 		printf("Usage: %s <PIN> <STATE>\n", argv[0]);
 		printf("  STATE := 0 | 1\n");
 
@@ -105,10 +99,6 @@ static int spl_gpio(shell_context_t *ctx, int argc, char *argv[]) {
 }
 
 static int spl_boot(shell_context_t *ctx, int argc, char *argv[]) {
-	if(argc != 1) {
-		printf("Usage: %s\n", argv[0]);
-	}
-
 	int ret = spl_stage1_op(ctx, STAGE1_DEBUG_BOOT, 0, 0, 0);
 
 	if(ret == -1)

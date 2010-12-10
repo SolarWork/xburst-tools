@@ -36,19 +36,19 @@ static int usbboot_nload(shell_context_t *ctx, int argc, char *argv[]);
 
 const shell_command_t usbboot_cmdset[] = {
 
-	{ "boot", "- Reconfigure stage2", usbboot_boot },
-	{ "load", "<FILE> <BASE> - Load file to SDRAM", usbboot_load },
-	{ "go", "<ADDRESS> - Jump to <ADDRESS>", usbboot_go },
+	{ "boot", "Reconfigure stage2", usbboot_boot, NULL },
+	{ "load", "Load file to SDRAM", usbboot_load, "<FILE> <BASE>" },
+	{ "go", "Jump to <ADDRESS>", usbboot_go, "<ADDRESS>" },
 
-	{ "nquery", "<DEVICE> - Query NAND information", usbboot_nquery },
-	{ "ndump", "<DEVICE> <STARTPAGE> <PAGES> <FILE> - Dump NAND to file", usbboot_ndump },
-	{ "ndump_oob", "<DEVICE> <STARTPAGE> <PAGES> <FILE> - Dump NAND with OOB to file", usbboot_ndump },
-	{ "nerase", "<DEVICE> <STARTBLOCK> <BLOCKS> - Erase NAND blocks", usbboot_nerase },
-	{ "nprogram", "<DEVICE> <STARTPAGE> <FILE> - Program NAND from file", usbboot_nprogram },
-	{ "nprogram_oob", "<DEVICE> <STARTPAGE> <FILE> - Program NAND with OOB from file", usbboot_nprogram },
-	{ "nload", "<DEVICE> <STARTPAGE> <PAGES> <BASE> - Load NAND data to SDRAM", usbboot_nload },
+	{ "nquery", "Query NAND information", usbboot_nquery, "<DEVICE>" },
+	{ "ndump", "Dump NAND to file", usbboot_ndump, "<DEVICE> <STARTPAGE> <PAGES> <FILE>" },
+	{ "ndump_oob", "Dump NAND with OOB to file", usbboot_ndump, "<DEVICE> <STARTPAGE> <PAGES> <FILE>" },
+	{ "nerase", "Erase NAND blocks", usbboot_nerase, "<DEVICE> <STARTBLOCK> <BLOCKS>" },
+	{ "nprogram", "Program NAND from file", usbboot_nprogram, "<DEVICE> <STARTPAGE> <FILE>" },
+	{ "nprogram_oob", "Program NAND with OOB from file", usbboot_nprogram, "<DEVICE> <STARTPAGE> <FILE>" },
+	{ "nload", "Load NAND data to SDRAM", usbboot_nload, "<DEVICE> <STARTPAGE> <PAGES> <BASE>" },
 	
-	{ NULL, NULL, NULL }
+	{ NULL, NULL, NULL, NULL }
 };
 
 static int usbboot_boot(shell_context_t *ctx, int argc, char *argv[]) {
@@ -61,12 +61,6 @@ static int usbboot_boot(shell_context_t *ctx, int argc, char *argv[]) {
 }
 
 static int usbboot_load(shell_context_t *ctx, int argc, char *argv[]) {
-	if(argc != 3) {
-		printf("Usage: %s <FILE> <BASE>\n", argv[0]);
-
-		return -1;
-	}
-
 	int ret = ingenic_load_sdram_file(shell_device(ctx), strtoul(argv[2], NULL, 0), argv[1]);
 
 	if(ret == -1)
@@ -76,12 +70,6 @@ static int usbboot_load(shell_context_t *ctx, int argc, char *argv[]) {
 }
 
 static int usbboot_go(shell_context_t *ctx, int argc, char *argv[]) {
-	if(argc != 2) {
-		printf("Usage: %s <ADDRESS>\n", argv[0]);
-
-		return -1;
-	}
-
 	int ret = ingenic_go(shell_device(ctx), strtoul(argv[1], NULL, 0));
 
 	if(ret == -1)
@@ -91,12 +79,6 @@ static int usbboot_go(shell_context_t *ctx, int argc, char *argv[]) {
 }
 
 static int usbboot_nquery(shell_context_t *ctx, int argc, char *argv[]) {
-	if(argc != 2) {
-		printf("Usage: %s <DEVICE>\n", argv[0]);
-
-		return -1;
-	}
-
 	nand_info_t info;
 
 	int ret = ingenic_query_nand(shell_device(ctx), atoi(argv[1]), &info);
@@ -120,12 +102,6 @@ static int usbboot_nquery(shell_context_t *ctx, int argc, char *argv[]) {
 }
 
 static int usbboot_ndump(shell_context_t *ctx, int argc, char *argv[]) {
-	if(argc != 5) {
-		printf("Usage: %s <DEVICE> <STARTPAGE> <PAGES> <FILE>\n", argv[0]);
-		
-		return -1;
-	}
-	
 	int type = strcmp(argv[0], "ndump_oob") ? NO_OOB : OOB_ECC;
 	
 	if(cfg_getenv("NAND_RAW"))
@@ -140,12 +116,6 @@ static int usbboot_ndump(shell_context_t *ctx, int argc, char *argv[]) {
 }
 
 static int usbboot_nerase(shell_context_t *ctx, int argc, char *argv[]) {
-	if(argc != 4) {
-		printf("Usage: %s <DEVICE> <STARTBLOCK> <BLOCKS>\n", argv[0]);
-		
-		return -1;
-	}
-	
 	int ret = ingenic_erase_nand(shell_device(ctx), atoi(argv[1]), atoi(argv[2]), atoi(argv[3]));
 	
 	if(ret == -1)
@@ -156,12 +126,6 @@ static int usbboot_nerase(shell_context_t *ctx, int argc, char *argv[]) {
 }
 
 static int usbboot_nprogram(shell_context_t *ctx, int argc, char *argv[]) {
-	if(argc != 4) {
-		printf("Usage: %s <DEVICE> <STARTPAGE> <FILE>\n", argv[0]);
-		
-		return -1;
-	}
-	
 	int type = strcmp(argv[0], "nprogram_oob") ? NO_OOB : OOB_ECC;
 	
 	if(strcmp(argv[0], "nprogram_oob") == 0) {
@@ -181,12 +145,6 @@ static int usbboot_nprogram(shell_context_t *ctx, int argc, char *argv[]) {
 }
 
 static int usbboot_nload(shell_context_t *ctx, int argc, char *argv[]) {
-	if(argc != 5) {
-		printf("Usage: %s <DEVICE> <STARTPAGE> <PAGES> <BASE>\n", argv[0]);
-		
-		return -1;
-	}
-	
 	int ret = ingenic_load_nand(shell_device(ctx), atoi(argv[1]), atoi(argv[2]), atoi(argv[3]), strtoul(argv[4], NULL, 0));
 	
 	if(ret == -1)
