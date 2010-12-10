@@ -628,6 +628,14 @@ int ingenic_program_nand(void *hndl, int cs, int start, int type, const char *fi
 	int file_size = ftell(in);
 	fseek(in, 0, SEEK_SET);
 	
+	int tail = file_size % page_size;
+
+	if(tail) {
+		tail = page_size - tail;
+
+		file_size += page_size - tail;
+	}
+
 	int pages = file_size / page_size;
 	int ret = 0;
 	
@@ -643,10 +651,14 @@ int ingenic_program_nand(void *hndl, int cs, int start, int type, const char *fi
 		int chunk = pages < chunk_pages ? pages : chunk_pages;
 		int bytes = chunk * page_size;	
 		
-		debug(LEVEL_DEBUG, "Writing %d pages from %d\n", chunk, start);
-		
 		ret = fread(iobuf, 1, bytes, in);
 		
+		if(pages < chunk_pages && tail) {
+			memset(iobuf + ret, 0xFF, tail);
+
+			ret += tail;
+		}
+
 		if(ret != bytes) {
 			debug(LEVEL_ERROR, "fread: %d\n", ret);
 			
