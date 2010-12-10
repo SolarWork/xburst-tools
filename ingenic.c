@@ -290,7 +290,7 @@ int ingenic_loadstage(void *hndl, int id, const char *file) {
 	fseek(fd, 0, SEEK_SET);
 
 	void *data = malloc(size);
-	size_t read_bytes = fread(data, size, 1, fd);
+	size_t read_bytes = fread(data, 1, size, fd);
 
 	fclose(fd);
 
@@ -460,7 +460,7 @@ int ingenic_load_sdram_file(void *hndl, uint32_t base, const char *file) {
 	fseek(fd, 0, SEEK_SET);
 
 	void *data = malloc(size);
-	size_t bytes = fread(data, size, 1, fd);
+	size_t bytes = fread(data, 1, size, fd);
 
 	fclose(fd);
 
