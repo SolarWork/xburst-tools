@@ -54,6 +54,10 @@
 #define NO_OOB	2
 #define NAND_RAW	(1 << 7)
 
+#define PROGRESS_INIT	0
+#define PROGRESS_UPDATE	1
+#define PROGRESS_FINI	2
+
 typedef struct {
 	/* debug args */
 	uint8_t debug_ops;
@@ -111,8 +115,10 @@ typedef struct {
 	uint8_t	plane;
 } nand_info_t;
 
+
 typedef struct {
-	void (*cmdset_change)(void *arg);
+	void (*cmdset_change)(uint32_t cmdset, void *arg);
+	void (*progress)(int action, int value, int max, void *arg);
 } ingenic_callbacks_t;
 
 void *ingenic_open(void *usb_hndl);

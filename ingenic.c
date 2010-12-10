@@ -34,6 +34,12 @@
 #define CPUID(id) ((id) & 0xFFFF)
 #define CMDSET(id) (((id) & 0xFFFF0000) >> 16)
 
+#define CFGOPT(name, var, exp) { char *str = cfg_getenv(name); if(str == NULL) { debug(LEVEL_ERROR, "%s is not set\n", name); errno = EINVAL; return -1; }; int v = atoi(str); if(!(exp)) { debug(LEVEL_ERROR, "%s must be in %s\n", name, #exp); return -1; }; handle->cfg.var = v; }
+
+#define NOPT(name, var, exp) { char *str = cfg_getenv("NAND_" name); if(str == NULL) { debug(LEVEL_ERROR, "%s is not set\n", "NAND_" name); errno = EINVAL; return -1; }; int v = atoi(str); if(!(exp)) { debug(LEVEL_ERROR, "%s must be in %s\n", "NAND_" name, #exp); return -1; }; handle->nand.nand_##var = v; }
+
+#define CALLBACK(function, ...) if(handle->callbacks && handle->callbacks->function) handle->callbacks->function(__VA_ARGS__, handle->callbacks_data)
+
 typedef struct {
 	void *usb;
 	uint32_t type;
@@ -138,8 +144,9 @@ int ingenic_redetect(void *hndl) {
 
 	handle->type = type;
 
-	if(CMDSET(prev) != CMDSET(type) && handle->callbacks && handle->callbacks->cmdset_change)
-		handle->callbacks->cmdset_change(handle->callbacks_data);
+	if(CMDSET(prev) != CMDSET(type)) {
+		CALLBACK(cmdset_change, CMDSET(type));
+	}
 
 	return 0;
 }
@@ -168,10 +175,6 @@ void ingenic_close(void *hndl) {
 
 	free(handle);
 }
-
-#define CFGOPT(name, var, exp) { char *str = cfg_getenv(name); if(str == NULL) { debug(LEVEL_ERROR, "%s is not set\n", name); errno = EINVAL; return -1; }; int v = atoi(str); if(!(exp)) { debug(LEVEL_ERROR, "%s must be in %s\n", name, #exp); return -1; }; handle->cfg.var = v; }
-
-#define NOPT(name, var, exp) { char *str = cfg_getenv("NAND_" name); if(str == NULL) { debug(LEVEL_ERROR, "%s is not set\n", "NAND_" name); errno = EINVAL; return -1; }; int v = atoi(str); if(!(exp)) { debug(LEVEL_ERROR, "%s must be in %s\n", "NAND_" name, #exp); return -1; }; handle->nand.nand_##var = v; }
 
 int ingenic_rebuild(void *hndl) {
 	HANDLE;
@@ -390,6 +393,10 @@ int ingenic_configure_stage2(void *hndl) {
 int ingenic_load_sdram(void *hndl, void *data, uint32_t base, uint32_t size) {
 	HANDLE;
 
+	int max = size, value = 0;
+
+	CALLBACK(progress, PROGRESS_INIT, 0, max);
+
 	while(size) {
 		int block = size > STAGE2_IOBUF ? STAGE2_IOBUF : size;
 
@@ -419,7 +426,14 @@ int ingenic_load_sdram(void *hndl, void *data, uint32_t base, uint32_t size) {
 		data += block;
 		base += block;
 		size -= block;
+		value += block;
+
+		CALLBACK(progress, PROGRESS_UPDATE, value, max);
+
 	}
+
+	CALLBACK(progress, PROGRESS_FINI, 0, 0);
+
 	debug(LEVEL_DEBUG, "Load done\n");
 
 	return 0;
@@ -505,6 +519,9 @@ int ingenic_dump_nand(void *hndl, int cs, int start, int pages, int type, const 
 	void *iobuf = malloc(chunk_pages * page_size);
 	
 	int ret = 0;
+	int value = 0, max = pages;
+	
+	CALLBACK(progress, PROGRESS_INIT, 0, max);
 	
 	while(pages > 0) {
 		int chunk = pages < chunk_pages ? pages : chunk_pages;
@@ -558,11 +575,17 @@ int ingenic_dump_nand(void *hndl, int cs, int start, int pages, int type, const 
 		
 		start += chunk;
 		pages -= chunk;
+
+		value += chunk;
+
+		CALLBACK(progress, PROGRESS_UPDATE, value, max);
 	}
 	
 	free(iobuf);
 	fclose(dest);
 	
+	CALLBACK(progress, PROGRESS_FINI, 0, 0);
+
 	return ret;
 }
 
@@ -612,6 +635,10 @@ int ingenic_program_nand(void *hndl, int cs, int start, int type, const char *fi
 		
 	debug(LEVEL_INFO, "Programming %d pages from %d (%d bytes, %d bytes/page)\n", pages, start, file_size, page_size);
 	
+	int value = 0, max = pages;
+
+	CALLBACK(progress, PROGRESS_INIT, 0, max);
+
 	while(pages > 0) {
 		int chunk = pages < chunk_pages ? pages : chunk_pages;
 		int bytes = chunk * page_size;	
@@ -658,10 +685,15 @@ int ingenic_program_nand(void *hndl, int cs, int start, int type, const char *fi
 		
 		start += chunk;
 		pages -= chunk;
+		value += chunk;
+
+		CALLBACK(progress, PROGRESS_UPDATE, value, max);
 	}
 	
 	free(iobuf);
 	fclose(in);
+
+	CALLBACK(progress, PROGRESS_FINI, 0, 0);
 	
 	return ret;
 }
@@ -688,3 +720,4 @@ int ingenic_load_nand(void *hndl, int cs, int start, int pages, uint32_t base) {
 	
 	return 0;
 }
+

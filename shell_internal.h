@@ -35,6 +35,7 @@ typedef struct {
 	char *line;
 	const struct shell_command *set_cmds;
 	int shell_exit;
+	int prev_progress;
 } shell_context_t;
 
 

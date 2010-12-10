@@ -26,15 +26,18 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
+#include <sys/ioctl.h>
 
 #include "shell_internal.h"
 #include "debug.h"
 #include "ingenic.h"
 
-static void shell_update_cmdset(void *arg);
+static void shell_update_cmdset(uint32_t cmdset, void *arg);
+static void shell_progress(int action, int value, int max, void *arg);
 
 static const ingenic_callbacks_t shell_callbacks = {
 	shell_update_cmdset,
+	shell_progress
 };
 
 static const struct {
@@ -60,7 +63,7 @@ shell_context_t *shell_init(void *ingenic) {
 
 	ingenic_set_callbacks(ingenic, &shell_callbacks, ctx);
 
-	shell_update_cmdset(ctx);
+	shell_update_cmdset(ingenic_cmdset(ingenic), ctx);
 
 	return ctx;
 }
@@ -424,15 +427,13 @@ void shell_interactive(shell_context_t *ctx) {
 #endif
 }
 
-static void shell_update_cmdset(void *arg) {
+static void shell_update_cmdset(uint32_t cmdset, void *arg) {
 	shell_context_t *ctx = arg;
 
 	ctx->set_cmds = NULL;
 
-	int set = ingenic_cmdset(ctx->device);
-
 	for(int i = 0; cmdsets[i].name != NULL; i++) {
-		if(cmdsets[i].set == set) {
+		if(cmdsets[i].set == cmdset) {
 			printf("Shell: using command set '%s', run 'help' for command list. CPU: %04X\n", cmdsets[i].name, ingenic_type(ctx->device));
 
 			ctx->set_cmds = cmdsets[i].commands;
@@ -441,7 +442,7 @@ static void shell_update_cmdset(void *arg) {
 		}
 	}
 
-	debug(LEVEL_ERROR, "Shell: unknown cmdset %d\n", set);
+	debug(LEVEL_ERROR, "Shell: unknown cmdset %u\n", cmdset);
 }
 
 void *shell_device(shell_context_t *ctx) {
@@ -450,5 +451,64 @@ void *shell_device(shell_context_t *ctx) {
 
 void shell_exit(shell_context_t *ctx, int val) {
 	ctx->shell_exit = val;
+}
+
+static void shell_progress(int action, int value, int max, void *arg) {
+	shell_context_t *ctx = arg;
+
+	if(isatty(STDOUT_FILENO)) {
+		struct winsize size;
+
+		int progress, percent;
+
+		if(ioctl(STDOUT_FILENO, TIOCGWINSZ, &size) == -1)
+			return;
+
+		int bar_size = size.ws_col - 6;
+
+		switch(action) {
+		case PROGRESS_INIT:
+			ctx->prev_progress = -1;
+		
+
+		case PROGRESS_FINI:
+			putchar('\r');
+
+			for(int i = 0; i < size.ws_col; i++)
+				putchar(' ');
+
+			putchar('\r');
+
+			fflush(stdout);
+
+			break;
+
+		case PROGRESS_UPDATE:
+			progress = value * bar_size / max;
+			percent = value * 100 / max;
+
+			if(progress != ctx->prev_progress) {
+				fputs("\r|", stdout);
+
+				for(int i = 0; i < progress; i++) {
+					putchar('=');
+				}
+
+				for(int i = progress; i < bar_size; i++)
+					putchar(' ');
+
+				printf("|%3d%%", percent);
+
+				fflush(stdout);
+
+				ctx->prev_progress = progress;
+
+			}
+
+		
+			break;
+
+		}
+	}
 }
 
