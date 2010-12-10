@@ -25,14 +25,14 @@
 #include "ingenic.h"
 #include "config.h"
 
-static int usbboot_boot(int argc, char *argv[]);
-static int usbboot_load(int argc, char *argv[]);
-static int usbboot_go(int argc, char *argv[]);
-static int usbboot_nquery(int argc, char *argv[]);
-static int usbboot_ndump(int argc, char *argv[]);
-static int usbboot_nerase(int argc, char *argv[]);
-static int usbboot_nprogram(int argc, char *argv[]);
-static int usbboot_nload(int argc, char *argv[]);
+static int usbboot_boot(shell_context_t *ctx, int argc, char *argv[]);
+static int usbboot_load(shell_context_t *ctx, int argc, char *argv[]);
+static int usbboot_go(shell_context_t *ctx, int argc, char *argv[]);
+static int usbboot_nquery(shell_context_t *ctx, int argc, char *argv[]);
+static int usbboot_ndump(shell_context_t *ctx, int argc, char *argv[]);
+static int usbboot_nerase(shell_context_t *ctx, int argc, char *argv[]);
+static int usbboot_nprogram(shell_context_t *ctx, int argc, char *argv[]);
+static int usbboot_nload(shell_context_t *ctx, int argc, char *argv[]);
 
 const shell_command_t usbboot_cmdset[] = {
 
@@ -51,8 +51,8 @@ const shell_command_t usbboot_cmdset[] = {
 	{ NULL, NULL, NULL }
 };
 
-static int usbboot_boot(int argc, char *argv[]) {
-	int ret = ingenic_configure_stage2(shell_device());
+static int usbboot_boot(shell_context_t *ctx, int argc, char *argv[]) {
+	int ret = ingenic_configure_stage2(shell_device(ctx));
 
 	if(ret == -1)
 		perror("ingenic_configure_stage2");
@@ -60,14 +60,14 @@ static int usbboot_boot(int argc, char *argv[]) {
 	return ret;
 }
 
-static int usbboot_load(int argc, char *argv[]) {
+static int usbboot_load(shell_context_t *ctx, int argc, char *argv[]) {
 	if(argc != 3) {
 		printf("Usage: %s <FILE> <BASE>\n", argv[0]);
 
 		return -1;
 	}
 
-	int ret = ingenic_load_sdram_file(shell_device(), strtoul(argv[2], NULL, 0), argv[1]);
+	int ret = ingenic_load_sdram_file(shell_device(ctx), strtoul(argv[2], NULL, 0), argv[1]);
 
 	if(ret == -1)
 		perror("ingenic_load_sdram_file");
@@ -75,14 +75,14 @@ static int usbboot_load(int argc, char *argv[]) {
 	return ret;
 }
 
-static int usbboot_go(int argc, char *argv[]) {
+static int usbboot_go(shell_context_t *ctx, int argc, char *argv[]) {
 	if(argc != 2) {
 		printf("Usage: %s <ADDRESS>\n", argv[0]);
 
 		return -1;
 	}
 
-	int ret = ingenic_go(shell_device(), strtoul(argv[1], NULL, 0));
+	int ret = ingenic_go(shell_device(ctx), strtoul(argv[1], NULL, 0));
 
 	if(ret == -1)
 		perror("ingenic_go");
@@ -90,7 +90,7 @@ static int usbboot_go(int argc, char *argv[]) {
 	return ret;
 }
 
-static int usbboot_nquery(int argc, char *argv[]) {
+static int usbboot_nquery(shell_context_t *ctx, int argc, char *argv[]) {
 	if(argc != 2) {
 		printf("Usage: %s <DEVICE>\n", argv[0]);
 
@@ -99,7 +99,7 @@ static int usbboot_nquery(int argc, char *argv[]) {
 
 	nand_info_t info;
 
-	int ret = ingenic_query_nand(shell_device(), atoi(argv[1]), &info);
+	int ret = ingenic_query_nand(shell_device(ctx), atoi(argv[1]), &info);
 
 	if(ret == -1) {
 		perror("ingenic_query_nand");
@@ -119,7 +119,7 @@ static int usbboot_nquery(int argc, char *argv[]) {
 	return 0;
 }
 
-static int usbboot_ndump(int argc, char *argv[]) {
+static int usbboot_ndump(shell_context_t *ctx, int argc, char *argv[]) {
 	if(argc != 5) {
 		printf("Usage: %s <DEVICE> <STARTPAGE> <PAGES> <FILE>\n", argv[0]);
 		
@@ -131,7 +131,7 @@ static int usbboot_ndump(int argc, char *argv[]) {
 	if(cfg_getenv("NAND_RAW"))
 		type |= NAND_RAW;
 	
-	int ret = ingenic_dump_nand(shell_device(), atoi(argv[1]), atoi(argv[2]), atoi(argv[3]), type, argv[4]);
+	int ret = ingenic_dump_nand(shell_device(ctx), atoi(argv[1]), atoi(argv[2]), atoi(argv[3]), type, argv[4]);
 	
 	if(ret == -1)
 		perror("ingenic_dump_nand");
@@ -139,14 +139,14 @@ static int usbboot_ndump(int argc, char *argv[]) {
 	return ret;
 }
 
-static int usbboot_nerase(int argc, char *argv[]) {
+static int usbboot_nerase(shell_context_t *ctx, int argc, char *argv[]) {
 	if(argc != 4) {
 		printf("Usage: %s <DEVICE> <STARTBLOCK> <BLOCKS>\n", argv[0]);
 		
 		return -1;
 	}
 	
-	int ret = ingenic_erase_nand(shell_device(), atoi(argv[1]), atoi(argv[2]), atoi(argv[3]));
+	int ret = ingenic_erase_nand(shell_device(ctx), atoi(argv[1]), atoi(argv[2]), atoi(argv[3]));
 	
 	if(ret == -1)
 		perror("ingenic_erase_nand");
@@ -155,7 +155,7 @@ static int usbboot_nerase(int argc, char *argv[]) {
 	
 }
 
-static int usbboot_nprogram(int argc, char *argv[]) {
+static int usbboot_nprogram(shell_context_t *ctx, int argc, char *argv[]) {
 	if(argc != 4) {
 		printf("Usage: %s <DEVICE> <STARTPAGE> <FILE>\n", argv[0]);
 		
@@ -172,7 +172,7 @@ static int usbboot_nprogram(int argc, char *argv[]) {
 	} else 
 		type = NO_OOB;
 	
-	int ret = ingenic_program_nand(shell_device(), atoi(argv[1]), atoi(argv[2]), type, argv[3]);
+	int ret = ingenic_program_nand(shell_device(ctx), atoi(argv[1]), atoi(argv[2]), type, argv[3]);
 	
 	if(ret == -1)
 		perror("ingenic_program_nand");
@@ -180,14 +180,14 @@ static int usbboot_nprogram(int argc, char *argv[]) {
 	return ret;
 }
 
-static int usbboot_nload(int argc, char *argv[]) {
+static int usbboot_nload(shell_context_t *ctx, int argc, char *argv[]) {
 	if(argc != 5) {
 		printf("Usage: %s <DEVICE> <STARTPAGE> <PAGES> <BASE>\n", argv[0]);
 		
 		return -1;
 	}
 	
-	int ret = ingenic_load_nand(shell_device(), atoi(argv[1]), atoi(argv[2]), atoi(argv[3]), strtoul(argv[4], NULL, 0));
+	int ret = ingenic_load_nand(shell_device(ctx), atoi(argv[1]), atoi(argv[2]), atoi(argv[3]), strtoul(argv[4], NULL, 0));
 	
 	if(ret == -1)
 		perror("ingenic_load_nand");

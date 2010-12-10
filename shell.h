@@ -19,32 +19,30 @@
 #ifndef __SHELL__H__
 #define __SHELL__H__
 
-typedef struct {
+#ifndef SHELL_INTERNALS
+typedef void shell_context_t;
+#endif
+
+typedef struct shell_command {
 	const char *cmd;
 	const char *description;
-	int (*handler)(int argc, char *argv[]);
+	int (*handler)(shell_context_t *ctx, int argc, char *argv[]);
 } shell_command_t;
 
-int shell_init(void *ingenic);
-void shell_fini();
+shell_context_t *shell_init(void *ingenic);
+void shell_fini(shell_context_t *context);
 
-void shell_interactive();
-int shell_source(const char *filename);
-int shell_execute(const char *input);
+void shell_interactive(shell_context_t *ctx);
+int shell_source(shell_context_t *ctx, const char *filename);
+int shell_execute(shell_context_t *ctx, const char *input);
+void *shell_device(shell_context_t *ctx);
+int shell_run(shell_context_t *ctx, int argc, char *argv[]);
 
-void *shell_device();
-
-// lexer interface
-extern char *strval;
-
-#define TOK_SEPARATOR	1
-#define TOK_STRING	2
-#define TOK_SPACE	3
-#define TOK_COMMENT	4
-
-int shell_pull(char *buf, int maxlen);
+void shell_exit(shell_context_t *ctx, int val);
+int shell_enumerate_commands(shell_context_t *ctx, int (*callback)(shell_context_t *ctx, const shell_command_t *cmd, void *arg), void *arg);
 
 extern const shell_command_t spl_cmdset[];
 extern const shell_command_t usbboot_cmdset[];
+extern const shell_command_t builtin_cmdset[];
 
 #endif

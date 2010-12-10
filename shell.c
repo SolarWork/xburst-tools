@@ -27,42 +27,9 @@
 #include <unistd.h>
 #include <errno.h>
 
-#include "shell.h"
+#include "shell_internal.h"
 #include "debug.h"
 #include "ingenic.h"
-#include "config.h"
-
-static void *device = NULL;
-static char linebuf[512];
-char *strval = NULL, *line = NULL;
-
-int yylex();
-void yyrestart(FILE *new_file);
-
-static int builtin_help(int argc, char *argv[]);
-static int builtin_exit(int argc, char *argv[]);
-static int builtin_source(int argc, char *argv[]);
-static int builtin_echo(int argc, char *argv[]);
-static int builtin_sleep(int argc, char *argv[]);
-static int builtin_redetect(int argc, char *argv[]);
-static int builtin_rebuildcfg(int argc, char *argv[]);
-static int builtin_set(int argc, char *argv[]);
-static int builtin_safe(int argc, char *argv[]);
-
-static const shell_command_t commands[] = {
-	{ "help", "- Display this message", builtin_help },
-	{ "exit", "- Batch: stop current script, interactive: end session", builtin_exit },
-	{ "source", "<FILENAME> - run specified script", builtin_source },
-	{ "echo", "<STRING> - output specified string", builtin_echo },
-	{ "sleep", "<MILLISECONDS> - sleep a specified amount of time", builtin_sleep },
-	{ "set", "[VARIABLE] [VALUE] - print or set configuraton variables", builtin_set },
-	{ "safe", "<COMMAND> [ARG]... - run command ignoring errors", builtin_safe },
-
-	{ "redetect", " - Redetect CPU", builtin_redetect },
-	{ "rebuildcfg", " - Rebuild firmware configuration data", builtin_rebuildcfg },
-
-	{ NULL, NULL, NULL }
-};
 
 static void shell_update_cmdset(void *arg);
 
@@ -70,64 +37,106 @@ static const ingenic_callbacks_t shell_callbacks = {
 	shell_update_cmdset,
 };
 
-static const shell_command_t *set_cmds = NULL;
-static int shell_exit = 0;
+static const struct {
+	int set;
+	const char *name;
+	const shell_command_t *commands;
+} cmdsets[] = {
+	{ CMDSET_SPL,     "SPL",     spl_cmdset },
+	{ CMDSET_USBBOOT, "USBBoot", usbboot_cmdset },
+	{ 0,          NULL,  NULL }
+};
 
-int shell_init(void *ingenic) {
+shell_context_t *shell_init(void *ingenic) {
 #ifdef WITH_READLINE
 	rl_initialize();
 #endif
 
 	debug(LEVEL_DEBUG, "Initializing shell\n");
 
-	device = ingenic;
+	shell_context_t *ctx = malloc(sizeof(shell_context_t));
+	memset(ctx, 0, sizeof(shell_context_t));
+	ctx->device = ingenic;
 
-	ingenic_set_callbacks(ingenic, &shell_callbacks, NULL);
+	ingenic_set_callbacks(ingenic, &shell_callbacks, ctx);
 
-	shell_update_cmdset(NULL);
+	shell_update_cmdset(ctx);
+
+	return ctx;
+}
+
+int shell_enumerate_commands(shell_context_t *ctx, int (*callback)(shell_context_t *ctx, const shell_command_t *cmd, void *arg), void *arg) {
+	for(int i = 0; builtin_cmdset[i].cmd != NULL; i++) {
+		int ret = callback(ctx, builtin_cmdset + i, arg);
+
+		if(ret != 0)
+			return ret;
+	}
+
+	if(ctx->set_cmds)
+		for(int i = 0; ctx->set_cmds[i].cmd != NULL; i++) {
+			int ret = callback(ctx, ctx->set_cmds + i, arg);
+
+			if(ret != 0)
+				return ret;
+		}
 
 	return 0;
 }
 
-#define STATE_WANTSTR	0
-#define STATE_WANTSPACE	1
+static int shell_run_function(shell_context_t *ctx, const shell_command_t *cmd, void *arg) {
+	shell_run_data_t *data = arg;
 
-int shell_run(int argc, char *argv[]) {
-	for(int i = 0; commands[i].cmd != NULL; i++)
-		if(strcmp(commands[i].cmd, argv[0]) == 0)
-			return commands[i].handler(argc, argv);
+	if(strcmp(cmd->cmd, data->argv[0]) == 0) {
+		int ret = cmd->handler(ctx, data->argc, data->argv);
 
-	if(set_cmds) {
-		for(int i = 0; set_cmds[i].cmd != NULL; i++)
-			if(strcmp(set_cmds[i].cmd, argv[0]) == 0)
-				return set_cmds[i].handler(argc, argv);
-	}
-
-	debug(LEVEL_ERROR, "Bad command '%s'\n", argv[0]);
-
-	errno = EINVAL;
-	return -1;
+		if(ret == 0)
+			return 1;
+		else
+			return ret;
+	} else
+		return 0;
 }
 
-int shell_execute(const char *cmd) {
-	line = strdup(cmd);
-	char *ptr = line;
+int shell_run(shell_context_t *ctx, int argc, char *argv[]) {
+	shell_run_data_t data = { argc, argv };
+
+	int ret = shell_enumerate_commands(ctx, shell_run_function, &data);
+
+	if(ret != 0) {
+		debug(LEVEL_ERROR, "Bad command '%s'\n", argv[0]);
+
+		errno = EINVAL;
+		return -1;
+
+	} else if(ret == 1) {
+		return 0;
+	} else
+		return ret;
+}
+
+int shell_execute(shell_context_t *ctx, const char *cmd) {
+	yyscan_t scanner;
+	if(yylex_init_extra(ctx, &scanner) == -1)
+		return -1;
+
+	ctx->line = strdup(cmd);
+	char *ptr = ctx->line;
 
 	int token;
 	int state = STATE_WANTSTR;
 	int argc = 0;
 	char **argv = NULL;
-
-	yyrestart(NULL);
+	int fret = -1;
 
 	do {
 		int noway = 0;
 
-		token = yylex();
+		token = yylex(&scanner);
 
 		if((token == TOK_SEPARATOR || token == TOK_COMMENT || token == 0)) {
 			if(argc > 0) {
-				int ret = shell_run(argc, argv);
+				int ret = shell_run(ctx, argc, argv);
 
 				for(int i = 0; i < argc; i++) {
 					free(argv[i]);
@@ -139,9 +148,9 @@ int shell_execute(const char *cmd) {
 				argc = 0;
 
 				if(ret == -1) {
-					free(ptr);
+					fret = -1;
 
-					return -1;
+					break;
 				}
 			}
 
@@ -156,7 +165,7 @@ int shell_execute(const char *cmd) {
 
 					argv = realloc(argv, sizeof(char *) * argc);
 
-					argv[oargc] = strval;
+					argv[oargc] = ctx->strval;
 
 					state = STATE_WANTSPACE;
 				} else {
@@ -167,7 +176,7 @@ int shell_execute(const char *cmd) {
 
 			case STATE_WANTSPACE:
 				if(token == TOK_STRING) {
-					free(strval);
+					free(ctx->strval);
 
 					noway = 1;
 				} else if(token == TOK_SPACE) {
@@ -183,9 +192,10 @@ int shell_execute(const char *cmd) {
 					free(argv[i]);
 
 				free(argv);
-				free(ptr);
 
-				return -1;
+				fret = -1;
+
+				break;
 			}
 		}
 
@@ -193,28 +203,30 @@ int shell_execute(const char *cmd) {
 
 	free(ptr);
 
-	return 0;
+	yylex_destroy(&scanner);
+
+	return fret;
 }
 
-int shell_pull(char *buf, int maxlen) {
-	size_t len = strlen(line);
+int shell_pull(shell_context_t *ctx, char *buf, int maxlen) {
+	size_t len = strlen(ctx->line);
 
 	if(len < maxlen)
 		maxlen = len;
 
-	memcpy(buf, line, maxlen);
+	memcpy(buf, ctx->line, maxlen);
 
-	line += maxlen;
+	ctx->line += maxlen;
 
 	return maxlen;
 }
 
-void shell_fini() {
-	device = NULL;
+void shell_fini(shell_context_t *ctx) {
+	free(ctx);
 }
 
-int shell_source(const char *filename) {
-	shell_exit = 0;
+int shell_source(shell_context_t *ctx, const char *filename) {
+	ctx->shell_exit = 0;
 
 	FILE *file = fopen(filename, "r");
 
@@ -224,8 +236,8 @@ int shell_source(const char *filename) {
 
 	char *line;
 
-	while((line = fgets(linebuf, sizeof(linebuf), file)) && !shell_exit) {
-		if(shell_execute(line) == -1) {
+	while((line = fgets(ctx->linebuf, sizeof(ctx->linebuf), file)) && !ctx->shell_exit) {
+		if(shell_execute(ctx, line) == -1) {
 			fclose(file);
 
 			return -1;
@@ -237,38 +249,37 @@ int shell_source(const char *filename) {
 	return 0;
 }
 
-void shell_interactive() {
-	shell_exit = 0;
+void shell_interactive(shell_context_t *ctx) {
+	ctx->shell_exit = 0;
 
 #ifndef WITH_READLINE
 	char *line;
 
-	while(!shell_exit) {
+	while(!ctx->shell_exit) {
 		fputs("jzboot> ", stdout);
 		fflush(stdout);
 
-		line = fgets(linebuf, sizeof(linebuf), stdin);
+		line = fgets(ctx->linebuf, sizeof(ctx->linebuf), stdin);
 
 		if(line == NULL)
 			break;
 
-		shell_execute(line);
+		shell_execute(ctx, line);
 	}
 #else
 
 	rl_set_signals();
 
-	while(!shell_exit) {
+	while(!ctx->shell_exit) {
 		char *line = readline("jzboot> ");
 
 		if(line == NULL) {
-			printf("line null, EOP\n");
 			break;
 		}
 
 		add_history(line);
 
-		shell_execute(line);
+		shell_execute(ctx, line);
 
 		free(line);
 	}
@@ -277,153 +288,18 @@ void shell_interactive() {
 #endif
 }
 
-static int builtin_help(int argc, char *argv[]) {
-	for(int i = 0; commands[i].cmd != NULL; i++) {
-		printf("%s %s\n", commands[i].cmd, commands[i].description);
-	}
-
-	if(set_cmds) {
-		for(int i = 0; set_cmds[i].cmd != NULL; i++)
-			printf("%s %s\n", set_cmds[i].cmd, set_cmds[i].description);
-	}
-
-	return 0;
-}
-
-static int builtin_exit(int argc, char *argv[]) {
-	shell_exit = 1;
-
-	return 0;
-}
-
-static int builtin_source(int argc, char *argv[]) {
-	if(argc != 2) {
-		printf("Usage: %s <FILENAME>\n", argv[0]);
-
-		return -1;
-	}
-
-	int ret = shell_source(argv[1]);
-
-	if(ret == -1) {
-		fprintf(stderr, "Error while sourcing file %s: %s\n", argv[1], strerror(errno));
-	}
-
-	shell_exit = 0;
-
-	return ret;
-}
-
-static int builtin_echo(int argc, char *argv[]) {
-	if(argc < 2) {
-		printf("Usage: %s <STRING>\n", argv[0]);
-
-		return -1;
-	}
-
-	for(int i = 1; i < argc; i++) {
-		fputs(argv[i], stdout);
-
-		putchar((i < argc - 1) ? ' ' : '\n');
-	}
-
-	return 0;
-}
-
-static int builtin_sleep(int argc, char *argv[]) {
-	if(argc != 2) {
-		printf("Usage: %s <MILLISECONDS>\n", argv[0]);
-
-		return -1;
-	}
-
-	uint32_t ms = atoi(argv[1]);
-
-	usleep(ms * 1000);
-
-	return 0;
-}
-
-static int builtin_redetect(int argc, char *argv[]) {
-	if(argc != 1) {
-		printf("Usage: %s\n", argv[0]);
-
-		return -1;
-	}
-
-	if(ingenic_redetect(device) == -1) {
-		perror("ingenic_redetect");
-
-		return -1;
-	} else
-		return 0;
-}
-
-
-static int builtin_set(int argc, char *argv[]) {
-	if(argc == 1 && cfg_environ) {
-		for(int i = 0; cfg_environ[i] != NULL; i++)
-			printf("%s\n", cfg_environ[i]);
-
-	} else if(argc == 2) {
-		cfg_unsetenv(argv[1]);
-
-	} else if(argc == 3) {
-		cfg_setenv(argv[1], argv[2]);
-
-	} else {
-		printf("Usage: %s [VARIABLE] [VALUE]\n", argv[0]);
-
-		return -1;
-	}
-
-	return 0;
-}
-
-
-static int builtin_rebuildcfg(int argc, char *argv[]) {
-	if(argc != 1) {
-		printf("Usage: %s\n", argv[0]);
-
-		return -1;
-	}
-
-	return ingenic_rebuild(device);
-}
-
-static int builtin_safe(int argc, char *argv[]) {
-	if(argc < 2) {
-		printf("Usage: %s <COMMAND> [ARG]...\n", argv[0]);
-
-		return -1;
-	}
-
-	if(shell_run(argc - 1, argv + 1) == -1)
-		perror("shell_run");
-
-	return 0;
-}
-
-static const struct {
-	int set;
-	const char *name;
-	const shell_command_t *commands;
-} cmdsets[] = {
-	{ CMDSET_SPL,     "SPL",     spl_cmdset },
-	{ CMDSET_USBBOOT, "USBBoot", usbboot_cmdset },
-	{ 0,          NULL,  NULL }
-};
-
 static void shell_update_cmdset(void *arg) {
-	set_cmds = NULL;
+	shell_context_t *ctx = arg;
 
-	int set = ingenic_cmdset(device);
+	ctx->set_cmds = NULL;
+
+	int set = ingenic_cmdset(ctx->device);
 
 	for(int i = 0; cmdsets[i].name != NULL; i++) {
 		if(cmdsets[i].set == set) {
-			printf("Shell: using command set '%s', run 'help' for command list. CPU: %04X\n", cmdsets[i].name, ingenic_type(device));
+			printf("Shell: using command set '%s', run 'help' for command list. CPU: %04X\n", cmdsets[i].name, ingenic_type(ctx->device));
 
-			set_cmds = cmdsets[i].commands;
+			ctx->set_cmds = cmdsets[i].commands;
 
 			return;
 		}
@@ -432,6 +308,11 @@ static void shell_update_cmdset(void *arg) {
 	debug(LEVEL_ERROR, "Shell: unknown cmdset %d\n", set);
 }
 
-void *shell_device() {
-	return device;
+void *shell_device(shell_context_t *ctx) {
+	return ctx->device;
 }
+
+void shell_exit(shell_context_t *ctx, int val) {
+	ctx->shell_exit = val;
+}
+

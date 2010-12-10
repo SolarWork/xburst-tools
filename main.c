@@ -146,7 +146,9 @@ int main(int argc, char *argv[]) {
 		goto exit_usb;
 	}
 
-	if(shell_init(ingenic) == -1) {
+	shell_context_t *shell = shell_init(ingenic);
+
+	if(shell == NULL) {
 		perror("shell_init");
 
 		ret = 1;
@@ -155,7 +157,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	if(config)
-		if(shell_source(config) == -1) {
+		if(shell_source(shell, config) == -1) {
 			perror("shell_source");
 
 			ret = 1;
@@ -164,23 +166,23 @@ int main(int argc, char *argv[]) {
 		}
 
 	if(cmd != NULL) {
-		if(shell_execute(cmd) == -1) {
+		if(shell_execute(shell, cmd) == -1) {
 			perror("shell_execute");
 
 			ret = 1;
 		}
 
 	} else if(script != NULL) {
-		if(shell_source(script) == -1) {
+		if(shell_source(shell, script) == -1) {
 			perror("shell_source");
 
 			ret = 1;
 		}
 	} else
-		shell_interactive();
+		shell_interactive(shell);
 
 exit_shell:
-	shell_fini();
+	shell_fini(shell);
 
 exit_ingenic:
 	ingenic_close(ingenic);

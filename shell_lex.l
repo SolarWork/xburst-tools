@@ -17,11 +17,9 @@
  */
 
 %{
-#include "shell.h"
+#include "shell_internal.h"
 #include <string.h>
 #include <stdlib.h>
-
-#define YY_INPUT(buf, result, max_size) result = shell_pull(buf, max_size);
 
 static char *str_append(char *str, const char *src) {
 	if(str) {
@@ -39,16 +37,16 @@ static char *str_append(char *str, const char *src) {
 		return strdup(src);
 }
 %}
-%option noyywrap nounput noinput batch
+%option noyywrap nounput noinput batch reentrant
 
 %x STR
 %%
-["]		{ strval = NULL; BEGIN(STR); }
+["]		{ yyextra->strval = NULL; BEGIN(STR); }
 ;		return TOK_SEPARATOR;
 [[:space:]]+	return TOK_SPACE;
 [#]	return TOK_COMMENT;
-[^[:space:];"#]+	{ strval = strdup(yytext); return TOK_STRING; }
-<STR>[^\\"]+	strval = str_append(strval, yytext);
-<STR>\\["]	strval = str_append(strval, "\"");
-<STR>\\		strval = str_append(strval, "\\");
+[^[:space:];"#]+	{ yyextra->strval = strdup(yytext); return TOK_STRING; }
+<STR>[^\\"]+	yyextra->strval = str_append(yyextra->strval, yytext);
+<STR>\\["]	yyextra->strval = str_append(yyextra->strval, "\"");
+<STR>\\		yyextra->strval = str_append(yyextra->strval, "\\");
 <STR>["]	{ BEGIN(INITIAL); return TOK_STRING; }
