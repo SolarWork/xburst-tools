@@ -649,7 +649,7 @@ int ingenic_program_nand(void *hndl, int cs, int start, int type, const char *fi
 	if(tail) {
 		tail = page_size - tail;
 
-		file_size += page_size - tail;
+		file_size += tail;
 	}
 
 	int pages = file_size / page_size;
