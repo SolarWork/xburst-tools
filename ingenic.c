@@ -329,6 +329,8 @@ int ingenic_loadstage(void *hndl, int id, const char *file) {
 	if(ret == -1)
 		return -1;
 
+	usleep(250);
+
 	if(id == INGENIC_STAGE2)
 		return ingenic_redetect(hndl);
 	else
