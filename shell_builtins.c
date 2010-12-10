@@ -136,9 +136,11 @@ static int builtin_redetect(shell_context_t *ctx, int argc, char *argv[]) {
 
 
 static int builtin_set(shell_context_t *ctx, int argc, char *argv[]) {
-	if(argc == 1 && cfg_environ) {
-		for(int i = 0; cfg_environ[i] != NULL; i++)
-			printf("%s\n", cfg_environ[i]);
+	if(argc == 1) {
+		if(cfg_environ) {
+			for(int i = 0; cfg_environ[i] != NULL; i++)
+				printf("%s\n", cfg_environ[i]);
+		}
 
 	} else if(argc == 2) {
 		cfg_unsetenv(argv[1]);

@@ -156,7 +156,7 @@ int main(int argc, char *argv[]) {
 		goto exit_ingenic;
 	}
 
-	if(config)
+	if(config) {
 		if(shell_source(shell, config) == -1) {
 			perror("shell_source");
 
@@ -164,6 +164,7 @@ int main(int argc, char *argv[]) {
 
 			goto exit_shell;
 		}
+	}
 
 	if(cmd != NULL) {
 		if(shell_execute(shell, cmd) == -1) {

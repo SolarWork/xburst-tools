@@ -103,7 +103,7 @@ int shell_run(shell_context_t *ctx, int argc, char *argv[]) {
 
 	int ret = shell_enumerate_commands(ctx, shell_run_function, &data);
 
-	if(ret != 0) {
+	if(ret == 0) {
 		debug(LEVEL_ERROR, "Bad command '%s'\n", argv[0]);
 
 		errno = EINVAL;
@@ -127,12 +127,12 @@ int shell_execute(shell_context_t *ctx, const char *cmd) {
 	int state = STATE_WANTSTR;
 	int argc = 0;
 	char **argv = NULL;
-	int fret = -1;
+	int fret = 0;
 
 	do {
 		int noway = 0;
 
-		token = yylex(&scanner);
+		token = yylex(scanner);
 
 		if((token == TOK_SEPARATOR || token == TOK_COMMENT || token == 0)) {
 			if(argc > 0) {
@@ -203,7 +203,7 @@ int shell_execute(shell_context_t *ctx, const char *cmd) {
 
 	free(ptr);
 
-	yylex_destroy(&scanner);
+	yylex_destroy(scanner);
 
 	return fret;
 }
@@ -249,6 +249,88 @@ int shell_source(shell_context_t *ctx, const char *filename) {
 	return 0;
 }
 
+#ifdef WITH_READLINE
+static shell_context_t *completion_context;
+static char **completion_matches;
+static int completion_matches_count = 0;
+
+static int shell_completion_filler(shell_context_t *ctx, const shell_command_t *cmd, void *arg) {
+	const char *part = arg;
+
+	size_t len = strlen(part), cmdlen = strlen(cmd->cmd);
+
+	if(cmdlen >= len && memcmp(part, cmd->cmd, len) == 0) {
+		int idx = completion_matches_count++;
+
+		completion_matches = realloc(completion_matches, sizeof(char **) * completion_matches_count);
+		completion_matches[idx] = strdup(cmd->cmd);
+	}
+	
+	return 0;
+}
+
+static char *shell_completion(const char *partial, int state) {
+	static int completion_pass = 0, completion_matches_offset = 0;
+
+	if(state == 0) {
+		if(completion_matches) {
+			for(int i = 0; i < completion_matches_count; i++)
+				if(completion_matches[i])
+					free(completion_matches[i]);
+
+			free(completion_matches);
+		
+			completion_matches = NULL;
+			completion_matches_count = 0;
+		}
+
+		completion_pass = 0;
+
+		char *tmp = rl_line_buffer;
+
+		while(isspace(*tmp)) tmp++;
+
+		int not_first = 0;
+
+		for(; *tmp; tmp++) {
+			for(const char *sep = rl_basic_word_break_characters; *sep; sep++) {
+				if(*tmp == *sep) {
+					not_first = 1;
+
+					break;
+				}
+			}
+
+			if(not_first)
+				break;
+		}
+
+		if(not_first) {
+			completion_pass = 1;
+
+			return rl_filename_completion_function(partial, state);
+		} else {
+			shell_enumerate_commands(completion_context, shell_completion_filler, (void *) partial);
+
+			completion_matches_offset = 0;
+		}
+	}
+
+	if(completion_pass) {
+		return rl_filename_completion_function(partial, state);
+
+	} else if(completion_matches_offset == completion_matches_count) {
+		return NULL;
+	} else {
+		char *val = completion_matches[completion_matches_offset];
+
+		completion_matches[completion_matches_offset++] = NULL;
+
+		return val;
+	}
+}
+#endif
+
 void shell_interactive(shell_context_t *ctx) {
 	ctx->shell_exit = 0;
 
@@ -267,9 +349,12 @@ void shell_interactive(shell_context_t *ctx) {
 		shell_execute(ctx, line);
 	}
 #else
+	rl_completion_entry_function = shell_completion;
+	completion_context = ctx;
 
 	rl_set_signals();
 
+	rl_filename_quote_characters = "\" ";
 	while(!ctx->shell_exit) {
 		char *line = readline("jzboot> ");
 
