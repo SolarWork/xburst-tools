@@ -408,8 +408,8 @@ int ingenic_load_sdram(void *hndl, void *data, uint32_t base, uint32_t size) {
 	while(size) {
 		int block = size > STAGE2_IOBUF ? STAGE2_IOBUF : size;
 
-		printf("Loading %d bytes from %p to 0x%08X\n", block, data, base);
-		
+		debug(LEVEL_DEBUG, "Loading %d bytes from %p to 0x%08X\n", block, data, base);
+
 		if(usbdev_sendbulk(handle->usb, data, block) == -1)
 			return -1;
 		
