@@ -4,7 +4,7 @@
 
 echo "---- Restore MINIOS script ----"
 echo "Including initial config for 4750 XZ0032 board"
-source script/boot.cfg
+source config/boot.cfg
 echo "jzboot successfully configured for XZ0032"
 
 echo "Erasing all flash"
