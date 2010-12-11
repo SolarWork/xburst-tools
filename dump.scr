@@ -10,8 +10,6 @@ echo "Configured for bootloader IO!"
 
 ndump_oob 0 0 128 "dump/nand.bin"
 
-exit
-
 set NAND_RAW
 set NAND_ECCPOS 8
 rebuildcfg
