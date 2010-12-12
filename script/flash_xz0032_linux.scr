@@ -23,12 +23,16 @@ echo "Flashing kernel"
 nprogram 0 2048 uImage
 echo "Flashed kernel" 
 
-echo "Configuring for standard IO"
-source script/ecc_normal.scr
-echo "Configured for standard IO"
+echo "Configuring for rootfs IO"
+set NAND_ECCPOS       24   # Specify the ECC offset inside the oob data (0-[oobsize-1])
+set NAND_BADBLOCKPAGE 127  # Specify the page number of badblock flag inside a block(0-[PAGEPERBLOCK-1])
+set NAND_BCHBIT       4    # Specify the hardware BCH algorithm for 4750 (4|8)
+rebuildcfg
+boot
+echo "Configured for rootfs IO"
 
 echo "Flashing rootfs"
-nprogram 0 4096 rootfs.yaffs2
+nprogram_oob 0 4096 rootfs.yaffs2
 echo "Flashed rootfs"
 
 echo "---- All done ----"
