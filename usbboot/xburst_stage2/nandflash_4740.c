@@ -22,7 +22,7 @@
 #include "target/usb_boot.h"
 #include "usb_boot_defines.h"
 
-#define __nand_enable()	(REG_EMC_NFCSR |= EMC_NFCSR_NFE1 | EMC_NFCSR_NFCE1)
+#define __nand_enable()		(REG_EMC_NFCSR |= EMC_NFCSR_NFE1 | EMC_NFCSR_NFCE1)
 #define __nand_disable()	(REG_EMC_NFCSR &= ~(EMC_NFCSR_NFCE1))
 #define __nand_ecc_rs_encoding()	(REG_EMC_NFECR = EMC_NFECR_ECCE | EMC_NFECR_ERST | EMC_NFECR_RS | EMC_NFECR_RS_ENCODING)
 #define __nand_ecc_rs_decoding()	(REG_EMC_NFECR = EMC_NFECR_ECCE | EMC_NFECR_ERST | EMC_NFECR_RS | EMC_NFECR_RS_DECODING)
@@ -50,7 +50,7 @@
 
 #define OP_ERASE	0
 #define OP_WRITE	1
-#define OP_READ	2
+#define OP_READ		2
 
 #define ECC_BLOCK	512
 #define PAR_SIZE	9
@@ -61,9 +61,10 @@ static volatile unsigned char *addrport = (volatile unsigned char *)0xb8010000;
 static volatile unsigned char *dataport = (volatile unsigned char *)0xb8000000;
 static volatile unsigned char *cmdport = (volatile unsigned char *)0xb8008000;
 
-static int bus = 8, row = 2, pagesize = 2048, oobsize = 64, ppb = 128;
-static int bad_block_pos,bad_block_page,force_erase,ecc_pos,wp_pin;
+static int bus, row, pagesize, oobsize, ppb;
+static int bad_block_pos, bad_block_page, force_erase, ecc_pos, wp_pin;
 static u8 oob_buf[256] = {0};
+
 extern struct hand Hand;
 extern u16 handshake_PKT[4];
 
@@ -77,8 +78,10 @@ static unsigned int EMC_CSN[4] = {
 static inline void __nand_sync(void)
 {
 	unsigned int timeout = 100000;
-	while ((REG_GPIO_PXPIN(2) & 0x40000000) && timeout--);
-	while (!(REG_GPIO_PXPIN(2) & 0x40000000));
+	while ((REG_GPIO_PXPIN(2) & 0x40000000) && timeout--)
+		;
+	while (!(REG_GPIO_PXPIN(2) & 0x40000000))
+		;
 }
 
 static void select_chip(int block)
@@ -86,6 +89,7 @@ static void select_chip(int block)
 	int t;
 	if (!Hand.nand_bpc) 
 		return;
+
 	t = (block / Hand.nand_bpc) % 4;
 	addrport = (volatile unsigned char *)(EMC_CSN[t] + 0x10000);
 	dataport = (volatile unsigned char *)EMC_CSN[t];
@@ -133,11 +137,11 @@ unsigned int nand_query_4740(u8 *id)
 	__nand_cmd(CMD_READID);
 	__nand_addr(0);
 
-	id[0] = __nand_data8();      //VID
-	id[1] = __nand_data8();      //PID
-	id[2] = __nand_data8();      //CHIP ID
-	id[3] = __nand_data8();      //PAGE ID
-	id[4] = __nand_data8();      //PLANE ID
+	id[0] = __nand_data8();      /* VID */
+	id[1] = __nand_data8();      /* PID */
+	id[2] = __nand_data8();      /* CHIP ID */
+	id[3] = __nand_data8();      /* PAGE ID */
+	id[4] = __nand_data8();      /* PLANE ID */
 
 	return 0;
 }
@@ -163,9 +167,9 @@ int nand_init_4740(int bus_width, int row_cycle, int page_size, int page_per_blo
 	}
 	nand_init_gpio();
 	select_chip(0);
-	REG_EMC_SMCR1 = 0x0fff7700;      //slow speed
-//	REG_EMC_SMCR1 = 0x04444400;      //normal speed
-//	REG_EMC_SMCR1 = 0x0d221200;      //fast speed
+	REG_EMC_SMCR1 = 0x0fff7700;      /* slow speed */
+/* 	REG_EMC_SMCR1 = 0x04444400;      normal speed */
+/* 	REG_EMC_SMCR1 = 0x0d221200;      fast speed */
 
 	if (bus == 8) {
 		write_proc = nand_data_write8;
@@ -174,6 +178,7 @@ int nand_init_4740(int bus_width, int row_cycle, int page_size, int page_per_blo
 		write_proc = nand_data_write16;
 		read_proc = nand_data_read16;
 	}
+
 	return 0;
 }
 
@@ -209,22 +214,22 @@ u32 nand_read_oob_4740(void *buf, u32 startpage, u32 pagenum)
 
 static int nand_check_block(u32 block)
 {
-	u32 pg,i;
-	if ( bad_block_page >= ppb ) {
+	u32 pg, i;
+	if (bad_block_page >= ppb) {
 		/* do absolute bad block detect! */
 		pg = block * ppb + 0;
 		read_oob(oob_buf, oobsize, pg);
-		if ( oob_buf[0] != 0xff || oob_buf[1] != 0xff )
+		if (oob_buf[0] != 0xff || oob_buf[1] != 0xff)
 			goto bad;
 
 		pg = block * ppb + 1;
 		read_oob(oob_buf, oobsize, pg);
-		if ( oob_buf[0] != 0xff || oob_buf[1] != 0xff )
+		if (oob_buf[0] != 0xff || oob_buf[1] != 0xff)
 			goto bad;
 
 		pg = block * ppb + ppb - 2 ;
 		read_oob(oob_buf, oobsize, pg);
-		if ( oob_buf[0] != 0xff || oob_buf[1] != 0xff )
+		if (oob_buf[0] != 0xff || oob_buf[1] != 0xff)
 			goto bad;
 
 		pg = block * ppb + ppb - 1 ;
@@ -267,7 +272,7 @@ u32 nand_read_raw_4740(void *buf, u32 startpage, u32 pagecount, int option)
 		select_chip(cnt / ppb);
 		if ((cur_page % ppb) == 0) {
 			if (nand_check_block(cur_page / ppb)) {
-				cur_page += ppb; //Bad block, set to next block 
+				cur_page += ppb; /* Bad block, set to next block  */
 				continue;
 			}
 		}
@@ -435,7 +440,7 @@ u32 nand_read_4740(void *buf, u32 startpage, u32 pagecount, int option)
 		if ((cur_page % ppb) == 0) {
 			cur_blk = cur_page / ppb;
 			if (nand_check_block(cur_blk)) {
-				cur_page += ppb; //Bad block, set to next block 
+				cur_page += ppb; /* Bad block, set to next block  */
 				continue;
 			}
 		}
@@ -570,7 +575,7 @@ restart:
 
 		if ((cur % ppb) == 0) {
 			if (nand_check_block(cur / ppb)) {
-				cur += ppb;   // Bad block, set to next block 
+				cur += ppb;   /*  Bad block, set to next block  */
 				continue;
 			}
 		}
@@ -604,9 +609,9 @@ restart:
 
 		switch (option) {
 		case OOB_ECC:
-			write_proc(tmpbuf, pagesize);  //write data
+			write_proc(tmpbuf, pagesize);  /* write data */
 			tmpbuf += pagesize;
-			write_proc((u8 *)tmpbuf, oobsize); //write oob
+			write_proc((u8 *)tmpbuf, oobsize); /* write oob */
 			tmpbuf += oobsize;
 
 			break;
@@ -683,7 +688,7 @@ restart:
 		/* page program error */
 		if (__nand_data8() & 0x01) {
 			serial_puts("Skip a write fail block\n");
-			nand_erase_4740(1, cur/ppb, 1);  //force erase before
+			nand_erase_4740(1, cur/ppb, 1);  /* force erase before */
 			nand_mark_bad_4740(cur / ppb);
 			spage += ppb;
 			goto restart;
@@ -710,7 +715,7 @@ static u32 nand_mark_bad_page(u32 page)
 
 	if (wp_pin)
 		__gpio_set_pin(wp_pin);
-	//all set to 0x00
+	/* all set to 0x00 */
 	for (i = 0; i < pagesize + oobsize; i++)
 		badbuf[i] = 0x00;
 
@@ -739,8 +744,8 @@ u32 nand_mark_bad_4740(int block)
 {
 	u32 rowaddr;
 
-	//nand_erase_4740( 1, block, 1);  //force erase before
-	if ( bad_block_page >= ppb ) {  //mark four page!
+	/* nand_erase_4740( 1, block, 1);  force erase before */
+	if (bad_block_page >= ppb) {  /* mark four page! */
 		rowaddr = block * ppb + 0;
 		nand_mark_bad_page(rowaddr);
 
@@ -752,7 +757,7 @@ u32 nand_mark_bad_4740(int block)
 
 		rowaddr = block * ppb + ppb - 1;
 		nand_mark_bad_page(rowaddr);
-	} else {                        //mark one page only
+	} else {                        /* mark one page only */
 		rowaddr = block * ppb + bad_block_page;
 		nand_mark_bad_page(rowaddr);
 	}
@@ -764,7 +769,7 @@ static int nand_data_write8(char *buf, int count)
 {
 	int i;
 	u8 *p = (u8 *)buf;
-	for (i=0;i<count;i++)
+	for (i = 0; i < count; i++)
 		__nand_data8() = *p++;
 	return 0;
 }
@@ -773,7 +778,7 @@ static int nand_data_write16(char *buf, int count)
 {
 	int i;
 	u16 *p = (u16 *)buf;
-	for (i=0;i<count/2;i++)
+	for (i = 0; i < count / 2; i++)
 		__nand_data16() = *p++;
 	return 0;
 }
@@ -782,7 +787,7 @@ static int nand_data_read8(char *buf, int count)
 {
 	int i;
 	u8 *p = (u8 *)buf;
-	for (i=0;i<count;i++)
+	for (i = 0; i < count; i++)
 		*p++ = __nand_data8();
 	return 0;
 }
@@ -791,7 +796,7 @@ static int nand_data_read16(char *buf, int count)
 {
 	int i;
 	u16 *p = (u16 *)buf;
-	for (i=0; i < count / 2; i++)
+	for (i = 0; i < count / 2; i++)
 		*p++ = __nand_data16();
 	return 0;
 }
