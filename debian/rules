@@ -48,7 +48,7 @@ configure: configure.ac
 	AUTOMAKE="automake --foreign" autoreconf -is
 
 firmware: configure
-	./configure --enable-firmware
+	./configure --enable-firmware CROSS_COMPILE=mipsel-openwrt-linux-
 	$(MAKE) -C usbboot/src \
 		../xburst_stage1/xburst_stage1.bin \
 		../xburst_stage2/xburst_stage2.bin
