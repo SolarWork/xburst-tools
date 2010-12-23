@@ -2,7 +2,7 @@ AM_CFLAGS = -pedantic -Wall -W -DCFGDIR=\"$(cfgdir)\" -DDATADIR=\"$(pkgdatadir)\
 
 xburst-tools_version.h:
 	echo -e '#ifndef XBURST_TOOLS_VERSION' \
-	'\n#define XBURST_TOOLS_VERSION "201007"' \
+	'\n#define XBURST_TOOLS_VERSION "201012"' \
 	'\n#endif' > xburst-tools_version.h
 BUILT_SOURCES = xburst-tools_version.h
 
