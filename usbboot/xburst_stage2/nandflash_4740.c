@@ -309,19 +309,17 @@ u32 nand_read_raw_4740(void *buf, u32 startpage, u32 pagecount, int option)
 
 u32 nand_erase_4740(int blk_num, int sblk, int force)
 {
-	int i, j;
+	int j;
 	u32 cur, rowaddr;
 
 	if (wp_pin)
 		__gpio_set_pin(wp_pin);
 
-	cur = sblk * ppb;
-	for (i = 0; i < blk_num; ) {
+	for (cur = sblk * ppb; cur < (sblk + blk_num) * ppb; cur += ppb) {
 		rowaddr = cur;
 		select_chip(cur / ppb);
 		if (!force) {
-			if (nand_check_block(cur/ppb)) {
-				cur += ppb;
+			if (nand_check_block(cur / ppb)) {
 				blk_num += Hand.nand_plane;
 				continue;
 			}
@@ -341,15 +339,13 @@ u32 nand_erase_4740(int blk_num, int sblk, int force)
 			serial_puts("\nErase fail at: \t");
 			serial_put_hex(cur / ppb);
 			nand_mark_bad_4740(cur/ppb);
-			cur += ppb;
 			continue;
 		}
-		cur += ppb;
-		i++;
 	}
 
 	if (wp_pin)
 		__gpio_clear_pin(wp_pin);
+
 	return cur;
 }
 
@@ -744,7 +740,6 @@ u32 nand_mark_bad_4740(int block)
 {
 	u32 rowaddr;
 
-	/* nand_erase_4740( 1, block, 1);  force erase before */
 	if (bad_block_page >= ppb) {  /* mark four page! */
 		rowaddr = block * ppb + 0;
 		nand_mark_bad_page(rowaddr);
