@@ -1,4 +1,14 @@
-xburst-tools (0.0+201007-0.1) lucid; urgency=low
+xburst-tools version: 201012
+  [ Xiangfu Liu ]
+  * usbboot: don't skip bad block when nand erase
+  * usbboot: remove check root permissions
+
+  [ Sergey Kvachonok ]
+  * Make CROSS_COMPILE configure script variable
+  * Add firmware clean target to automake clean-local
+  * Add configure cross-compiler check
+
+xburst-tools version: 201007
 
   [ Xiangfu Liu ]
   * New snapshot, taken from commit 77a7270
