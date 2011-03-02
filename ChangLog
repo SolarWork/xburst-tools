@@ -1,3 +1,5 @@
+  * new command `reset`
+  * some code style cleanup
 xburst-tools version: 201012
   [ Xiangfu Liu ]
   * usbboot: don't skip bad block when nand erase
