@@ -33,83 +33,26 @@ char com_argv[MAX_ARGC][MAX_COMMAND_LENGTH];
 char * stage1;
 char * stage2;
 
-static const char COMMAND[][COMMAND_NUM]=
-{
-	"",
-	"query",
-	"querya",
-	"erase",
-	"read",
-	"prog",
-	"nquery",
-	"nerase",
-	"nread",
-	"nreadraw",
-	"nreadoob", /* index 10 */
-	"nprog",
-	"help",
-	"version",
-	"go",
-	"fconfig",
-	"exit",
-	"readnand",
-	"gpios",
-	"gpioc",
-	"boot", /* index 20 */
-	"list",
-	"select",
-	"unselect",
-	"chip",
-	"unchip",
-	"nmark",
-	"nmake",
-	"load",
-	"memtest",
-	"run"
-};
-
 static int handle_help(void)
 {
-	printf(" command support in current version:\n"
-	/* " query" */
-	/* " querya" */
-	/* " erase" */
-	/* " read" */
-	/* " prog" */
+	printf(
+	" boot       boot device and make it in stage2\n"
 	" nquery     query NAND flash info\n"
 	" nerase     erase NAND flash\n"
+	" nmark      mark a bad block in NAND flash\n"
 	" nread      read NAND flash data with checking bad block and ECC\n"
 	" nreadraw   read NAND flash data without checking bad block and ECC\n"
-	" nreadoo    read NAND flash oob without checking bad block and ECC\n" /* index 10 */
-	" nprog      program NAND flash with data and ECC\n"
-	" help       print this help\n"
-	" version    show current USB Boot software version\n"
-	" go         execute program in SDRAM\n"
-	" fconfig    set USB Boot config file(not implement)\n"
-	" exit       quit from telnet session\n"
-	" readnand   read data from nand flash and store to SDRAM\n"
+	" nreadoob   read NAND flash oob\n"
+	" nprog      program NAND flash\n"
 	" gpios      set one GPIO to high level\n"
 	" gpioc      set one GPIO to low level\n"
-	" boot       boot device and make it in stage2\n" /* index 20 */
-	" list       show current device number can connect(not implement)\n"
-	/* " select" */
-	/* " unselect" */
-	/* " chip" */
-	/* " unchip" */
-	" nmark      mark a bad block in NAND flash\n"
-	" nmake      read all data from nand flash and store to file(not implement)\n"
 	" load       load file data to SDRAM\n"
-	" memtest    do SDRAM test\n"
-	" run        run command script in file(implement by -c args)\n"
-	" sdprog     program SD card(not implement)\n"
-	" sdread     read data from SD card(not implement)\n");
-	return 1;
-}
+	" go         execute program in SDRAM\n"
+	" memtest    memory test\n"
+	" help       print this help\n"
+	" exit       \n");
 
-static int handle_version(void)
-{
-	printf(" USB Boot Software current version: %s\n", XBURST_TOOLS_VERSION);
-	return 1;
+	return 0;
 }
 
 /* need transfer two para :blk_num ,start_blk */
@@ -155,7 +98,7 @@ int handle_nmark(void)
 	nand_in.start = atoi(com_argv[1]);
 	nand_in.dev = atoi(com_argv[2]);
 
-	if (atoi(com_argv[3])>=MAX_DEV_NUM) {
+	if (atoi(com_argv[3]) >= MAX_DEV_NUM) {
 		printf(" Flash index number overflow!\n");
 		return -1;
 	}
@@ -223,90 +166,50 @@ int handle_load(void)
 	return 1;
 }
 
-int command_interpret(char * com_buf)
+int command_handle(char *buf)
 {
-	if(com_buf[0] == '\n')
+	if(buf[0] == '\n')
 		return 0;
 
 	com_argc = 0;
-	char *p = strtok(com_buf, "\n ");
+	char *p = strtok(buf, "\n ");
 	strcpy(com_argv[com_argc++], p);
 
-	while(p = strtok(NULL, "\n "))
+	while (p = strtok(NULL, "\n "))
 		strcpy(com_argv[com_argc++], p);
 
-	int loop = 0;
-	for (loop = 1; loop <= COMMAND_NUM; loop++)
-		if (!strcmp(COMMAND[loop], com_argv[0]))
-			return loop;
-
-	return -1;
-}
-
-int command_handle(char *buf)
-{
-	int cmd = command_interpret(buf); /* get the command index */
-
-	switch (cmd) {
-	case 0:
-		break;
-	case 6:
-		nand_query();
-		break;
-	case 7:	
-		handle_nerase();
-		break;
-	case 8:	/* nread */
-		nand_read(NAND_READ);
-		break;
-	case 9:	/* nreadraw */
-		nand_read(NAND_READ_RAW);
-		break;
-	case 10: /* nreadoob */
-		nand_read(NAND_READ_OOB);
-		break;
-	case 11:
-		nand_prog();
-		break;
-	case 12:
-		handle_help();
-		break;
-	case 13:
-		handle_version();
-		break;
-	case 14:
-		debug_go();
-		break;
-	case 16:		/* exit */
-		printf(" exiting usbboot software\n");
-		return -1;	/* return -1 to break the main.c while
-				 * then run usb_ingenic_cleanup*/
-		/*case 17:
-		nand_read(NAND_READ_TO_RAM); */
-		break;
-	case 18:
-		handle_gpio(2);
-		break;
-	case 19:
-		handle_gpio(3);
-		break;
-	case 20:
+	if (!strcmp("boot", com_argv[0]))
 		boot(stage1, stage2);
-		break;
-	case 26:
+	else if (!strcmp("nquery", com_argv[0]))
+		nand_query();
+	else if (!strcmp("nerase", com_argv[0]))
+		handle_nerase();
+	else if (!strcmp("nmark", com_argv[0]))
 		handle_nmark();
-		break;
-	case 28:
+	else if (!strcmp("nread", com_argv[0]))
+		nand_read(NAND_READ);
+	else if (!strcmp("nreadraw", com_argv[0]))
+		nand_read(NAND_READ_RAW);
+	else if (!strcmp("nreadoob", com_argv[0]))
+		nand_read(NAND_READ_OOB);
+	else if (!strcmp("nprog", com_argv[0]))
+		nand_prog();
+	else if (!strcmp("gpios", com_argv[0]))
+		handle_gpio(2);
+	else if (!strcmp("gpioc", com_argv[0]))
+		handle_gpio(3);
+	else if (!strcmp("load", com_argv[0]))
 		handle_load();
-		break;
-	case 29:
+	else if (!strcmp("go", com_argv[0]))
+		debug_go();
+	else if (!strcmp("memtest", com_argv[0]))
 		handle_memtest();
-		break;
-	case -1:
-	default:
-		printf(" command not support or input error!\n");
-		break;
-	}
+	else if (!strcmp("help", com_argv[0]))
+		handle_help();
+	else if (!strcmp("exit", com_argv[0]))
+		return -1;
+	else
+		printf(" [%s] Not Support!", com_argv[0]);
 
-	return 1;
+	return 0;
 }

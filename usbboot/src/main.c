@@ -120,14 +120,18 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 
 	if (command) {		/* direct run command */
-		char *p[10];
+		char *sub_cmd[10];
 		int i, loop = 0;
-		p[loop++] = strtok(cmdpt, ";");
-		while(p[loop++] = strtok(NULL, ";"));
 
-		for(i = 0; i < loop - 1 && i < 10; i++) {
-			printf(" Execute command: %s \n",p[i]);
-			command_handle(p[i]);
+		sub_cmd[loop] = strtok(cmdpt, ";");
+		while (sub_cmd[loop] && loop < 10) {
+			loop++;
+			sub_cmd[loop] = strtok(NULL, ";");
+		}
+
+		for (i = 0; i < loop - 1; i++) {
+			printf(" Execute command: %s \n", sub_cmd[i]);
+			command_handle(sub_cmd[i]);
 		}
 		goto out;
 	}
@@ -138,11 +142,12 @@ int main(int argc, char **argv)
 		if (cptr == NULL)
 			continue;
 
-		if (command_handle(com_buf) == -1 )
+		if (command_handle(com_buf))
 			break;
 	}
 
 out:
 	usb_ingenic_cleanup(&ingenic_dev);
+
 	return EXIT_SUCCESS;
 }

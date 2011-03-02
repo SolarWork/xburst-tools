@@ -70,6 +70,7 @@ void *memcpy(void *dest, const void *src, size_t count)
 
 	while (count--)
 		*tmp++ = *s++;
+
 	return dest;
 }
 
@@ -286,41 +287,41 @@ static void udc_reset(void)
 	jz_writew(USB_REG_INTRINE, 0);
 	jz_writew(USB_REG_INTROUTE, 0);
 	jz_writeb(USB_REG_INTRUSBE, 0);
-	jz_writeb(USB_REG_FADDR,0);
-	jz_writeb(USB_REG_POWER,0x60);   //High speed
-	jz_writeb(USB_REG_INDEX,0);
-	jz_writeb(USB_REG_CSR0,0xc0);
-	jz_writeb(USB_REG_INDEX,1);
-	jz_writew(USB_REG_INMAXP,512);
-	jz_writew(USB_REG_INCSR,0x2048);
-	jz_writeb(USB_REG_INDEX,1);
-	jz_writew(USB_REG_OUTMAXP,512);
-	jz_writew(USB_REG_OUTCSR,0x0090);
-	jz_writew(USB_REG_INTRINE,0x3);   //enable intr
-	jz_writew(USB_REG_INTROUTE,0x2);
-	jz_writeb(USB_REG_INTRUSBE,0x4);
+	jz_writeb(USB_REG_FADDR, 0);
+	jz_writeb(USB_REG_POWER, 0x60);   //High speed
+	jz_writeb(USB_REG_INDEX, 0);
+	jz_writeb(USB_REG_CSR0, 0xc0);
+	jz_writeb(USB_REG_INDEX, 1);
+	jz_writew(USB_REG_INMAXP, 512);
+	jz_writew(USB_REG_INCSR, 0x2048);
+	jz_writeb(USB_REG_INDEX, 1);
+	jz_writew(USB_REG_OUTMAXP, 512);
+	jz_writew(USB_REG_OUTCSR, 0x0090);
+	jz_writew(USB_REG_INTRINE, 0x3);   //enable intr
+	jz_writew(USB_REG_INTROUTE, 0x2);
+	jz_writeb(USB_REG_INTRUSBE, 0x4);
 
-	byte=jz_readb(USB_REG_POWER);
-	if ((byte&0x10)==0) {
-		jz_writeb(USB_REG_INDEX,1);
-		jz_writew(USB_REG_INMAXP,64);
-		jz_writew(USB_REG_INCSR,0x2048);
-		jz_writeb(USB_REG_INDEX,1);
-		jz_writew(USB_REG_OUTMAXP,64);
-		jz_writew(USB_REG_OUTCSR,0x0090);
-		USB_Version=USB_FS;
-		fifosize[1]=64;
-		EP0_init(1,64,1,64);
+	byte = jz_readb(USB_REG_POWER);
+	if ((byte&0x10) == 0) {
+		jz_writeb(USB_REG_INDEX, 1);
+		jz_writew(USB_REG_INMAXP, 64);
+		jz_writew(USB_REG_INCSR, 0x2048);
+		jz_writeb(USB_REG_INDEX, 1);
+		jz_writew(USB_REG_OUTMAXP, 64);
+		jz_writew(USB_REG_OUTCSR, 0x0090);
+		USB_Version = USB_FS;
+		fifosize[1] = 64;
+		EP0_init(1, 64, 1, 64);
 	} else {
-		jz_writeb(USB_REG_INDEX,1);
-		jz_writew(USB_REG_INMAXP,512);
-		jz_writew(USB_REG_INCSR,0x2048);
-		jz_writeb(USB_REG_INDEX,1);
-		jz_writew(USB_REG_OUTMAXP,512);
-		jz_writew(USB_REG_OUTCSR,0x0090);
-		USB_Version=USB_HS;
-		fifosize[1]=512;
-		EP0_init(1,512,1,512);
+		jz_writeb(USB_REG_INDEX, 1);
+		jz_writew(USB_REG_INMAXP, 512);
+		jz_writew(USB_REG_INCSR, 0x2048);
+		jz_writeb(USB_REG_INDEX, 1);
+		jz_writew(USB_REG_OUTMAXP, 512);
+		jz_writew(USB_REG_OUTCSR, 0x0090);
+		USB_Version = USB_HS;
+		fifosize[1] = 512;
+		EP0_init(1, 512, 1, 512);
 	}
 
 }
@@ -349,7 +350,7 @@ void usbHandleStandDevReq(u8 *buf)
 				break;
 			}
 		dprintf("\nSet ep0state=TX!");
-		ep0state=USB_EP0_TX;
+		ep0state = USB_EP0_TX;
 		
 		break;
 	case SET_ADDRESS:
@@ -382,25 +383,25 @@ void usbHandleVendorReq(u8 *buf)
 	USB_DeviceRequest *dreq = (USB_DeviceRequest *)buf;
 	switch (dreq->bRequest) {
 	case VR_GET_CUP_INFO:
-		ret_state=GET_CUP_INFO_Handle();
+		ret_state = GET_CUP_INFO_Handle();
 		break;
 	case VR_SET_DATA_ADDERSS:
-		ret_state=SET_DATA_ADDERSS_Handle(buf);
+		ret_state = SET_DATA_ADDERSS_Handle(buf);
 		break;
 	case VR_SET_DATA_LENGTH:
-		ret_state=SET_DATA_LENGTH_Handle(buf);
+		ret_state = SET_DATA_LENGTH_Handle(buf);
 		break;
 	case VR_FLUSH_CACHES:
-		ret_state=FLUSH_CACHES_Handle();
+		ret_state = FLUSH_CACHES_Handle();
 		break;
 	case VR_PROGRAM_START1:
-		ret_state=PROGRAM_START1_Handle(buf);
+		ret_state = PROGRAM_START1_Handle(buf);
 		break;
 	case VR_PROGRAM_START2:
-		ret_state=PROGRAM_START2_Handle(buf);
+		ret_state = PROGRAM_START2_Handle(buf);
 		break;
 	case VR_NOR_OPS:
-		ret_state=NOR_OPS_Handle(buf);
+		ret_state = NOR_OPS_Handle(buf);
 		Bulk_out_size = 0;
 		break;
 	case VR_NAND_OPS:
@@ -408,9 +409,9 @@ void usbHandleVendorReq(u8 *buf)
 		Bulk_out_size = 0;
 		break;
 	case VR_CONFIGRATION:
-		ret_state=CONFIGRATION_Handle(buf);
-		handshake_PKT[3]=(u16)ret_state;
-		HW_SendPKT(1,(u8 *)handshake_PKT,sizeof(handshake_PKT));
+		ret_state = CONFIGRATION_Handle(buf);
+		handshake_PKT[3] = (u16)ret_state;
+		HW_SendPKT(1, (u8 *)handshake_PKT, sizeof(handshake_PKT));
 		Bulk_out_size = 0;
 		break;
 	case VR_SDRAM_OPS:
@@ -422,10 +423,9 @@ void usbHandleVendorReq(u8 *buf)
 
 void Handshake_PKT()
 {
-	
 	if (udc_state!=IDLE)
 	{
-		HW_SendPKT(1,(u8 *)handshake_PKT,sizeof(handshake_PKT));
+		HW_SendPKT(1, (u8 *)handshake_PKT, sizeof(handshake_PKT));
 		udc_state = IDLE;
 		dprintf("\n Send handshake PKT!");
 	}
@@ -473,24 +473,14 @@ void EP0_Handler ()
 	if (ep0state == USB_EP0_IDLE) {
 		if (byCSR0 & USB_CSR0_OUTPKTRDY) {  //There are datas in fifo
 			USB_DeviceRequest *dreq;
-			fifo=fifoaddr[0];
+			fifo = fifoaddr[0];
 			udcReadFifo((u8 *)rx_buf, sizeof(USB_DeviceRequest));
 			usb_setb(USB_REG_CSR0, 0x48);//clear OUTRD bit
 			dreq = (USB_DeviceRequest *)rx_buf;
-#if 0
-			dprintf("\nbmRequestType:%02x\nbRequest:%02x\n"
-				"wValue:%04x\nwIndex:%04x\n"
-				"wLength:%04x\n",
-				dreq->bmRequestType,
-				dreq->bRequest,
-				dreq->wValue,
-				dreq->wIndex,
-				dreq->wLength);
-#endif
 			usbHandleDevReq((u8 *)rx_buf);
-		} else {
+		} else
 			dprintf("0:R DATA\n");
-		}
+
 		rx_size = 0;
 	}
 	
@@ -502,7 +492,7 @@ void EP0_Handler ()
 			finished = tx_size;
 			usb_setb(USB_REG_CSR0, USB_CSR0_INPKTRDY);
 			usb_setb(USB_REG_CSR0, USB_CSR0_DATAEND); //Set dataend!
-			ep0state=USB_EP0_IDLE;
+			ep0state = USB_EP0_IDLE;
 		} else {
 			udcWriteFifo((u8 *)((u32)tx_buf+finished), 64);
 			usb_setb(USB_REG_CSR0, USB_CSR0_INPKTRDY);
@@ -557,7 +547,7 @@ void udc4740Proc ()
 	IntrIn  = jz_readw(USB_REG_INTRIN);
 	IntrOut = jz_readw(USB_REG_INTROUT);
 		
-	if ( IntrUSB == 0 && IntrIn == 0 && IntrOut == 0)
+	if (IntrUSB == 0 && IntrIn == 0 && IntrOut == 0)
 		return;
 		
 	if (IntrIn & 2) {
@@ -602,20 +592,20 @@ void usb_main()
 	rx_size = 0;
 	finished = 0;
 
-	byte=jz_readb(USB_REG_POWER);
-	if ((byte&0x10)==0) {
-		USB_Version=USB_FS;
-		fifosize[1]=64;
-		EP0_init(1,64,1,64);
+	byte = jz_readb(USB_REG_POWER);
+	if ((byte&0x10) == 0) {
+		USB_Version = USB_FS;
+		fifosize[1] = 64;
+		EP0_init(1, 64, 1, 64);
 	} else {
-		USB_Version=USB_HS;
-		fifosize[1]=512;
-		EP0_init(1,512,1,512);
+		USB_Version = USB_HS;
+		fifosize[1] = 512;
+		EP0_init(1, 512, 1, 512);
 	}
 
 	serial_puts("\n Init UDC");
-	USB_Version=USB_HS;
-	while (1) {
+	USB_Version = USB_HS;
+
+	while (1)
 		udc4740Proc();
-	}
 }
