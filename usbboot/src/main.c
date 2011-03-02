@@ -67,18 +67,18 @@ static struct option opts[] = {
 
 int main(int argc, char **argv)
 {
-	int command = 0;
 	char *cptr;
-	char com_buf[256] = {0};
 	char *cmdpt;
+	int command = 0;
+	char cmd_buf[512] = {0};
 	char *cfgpath = CONFIG_FILE_PATH;
+
 	stage1 = STAGE1_FILE_PATH;
 	stage2 = STAGE2_FILE_PATH;
 
 	printf("usbboot - Ingenic XBurst USB Boot Utility\n"
 	       "(c) 2009 Ingenic Semiconductor Inc., Qi Hardware Inc., Xiangfu Liu, Marek Lindner\n"
 	       "This program is Free Software and comes with ABSOLUTELY NO WARRANTY.\n\n");
-
 
 	while(1) {
 		int c, option_index = 0;
@@ -119,15 +119,17 @@ int main(int argc, char **argv)
 	if (parse_configure(&hand, cfgpath) < 1)
 		return EXIT_FAILURE;
 
+#define MAX_COMMANDS	10
 	if (command) {		/* direct run command */
-		char *sub_cmd[10];
+		char *sub_cmd[MAX_COMMANDS];
 		int i, loop = 0;
 
-		sub_cmd[loop] = strtok(cmdpt, ";");
-		while (sub_cmd[loop] && loop < 10) {
-			loop++;
-			sub_cmd[loop] = strtok(NULL, ";");
-		}
+		sub_cmd[loop++] = strtok(cmdpt, ";");
+		while (sub_cmd[loop++] = strtok(NULL, ";"))
+			if (loop >= MAX_COMMANDS) {
+				printf(" -c only support 10 commands\n");
+				break;
+			}
 
 		for (i = 0; i < loop - 1; i++) {
 			printf(" Execute command: %s \n", sub_cmd[i]);
@@ -137,13 +139,11 @@ int main(int argc, char **argv)
 	}
 
 	while (1) {
-		printf("usbboot :> ");
-		cptr = fgets(com_buf, 256, stdin);
-		if (cptr == NULL)
-			continue;
-
-		if (command_handle(com_buf))
-			break;
+		printf("usbboot# ");
+		cptr = fgets(cmd_buf, sizeof(cmd_buf), stdin);
+		if (cptr != NULL)
+			if (command_handle(cmd_buf))
+				break;
 	}
 
 out:

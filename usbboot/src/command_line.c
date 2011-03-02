@@ -37,13 +37,13 @@ static int handle_help(void)
 {
 	printf(
 	" boot       boot device and make it in stage2\n"
+	" nprog      program NAND flash\n"
 	" nquery     query NAND flash info\n"
 	" nerase     erase NAND flash\n"
 	" nmark      mark a bad block in NAND flash\n"
 	" nread      read NAND flash data with checking bad block and ECC\n"
 	" nreadraw   read NAND flash data without checking bad block and ECC\n"
 	" nreadoob   read NAND flash oob\n"
-	" nprog      program NAND flash\n"
 	" gpios      set one GPIO to high level\n"
 	" gpioc      set one GPIO to low level\n"
 	" load       load file data to SDRAM\n"
@@ -81,7 +81,7 @@ int handle_nerase(void)
 	if (nand_erase(&nand_in) < 1)
 		return -1;
 
-	return 1;
+	return 0;
 }
 
 int handle_nmark(void)
@@ -93,6 +93,7 @@ int handle_nmark(void)
 		       " 3:flash chip index number\n");
 		return -1;
 	}
+
 	init_nand_in();
 
 	nand_in.start = atoi(com_argv[1]);
@@ -105,14 +106,13 @@ int handle_nmark(void)
 	(nand_in.cs_map)[atoi(com_argv[3])] = 1;
 
 	nand_markbad(&nand_in);
-	return 1;
+	return 0;
 }
 
 int handle_memtest(void)
 {
 	unsigned int start, size;
-	if (com_argc != 2 && com_argc != 4)
-	{
+	if (com_argc != 2 && com_argc != 4) {
 		printf(" Usage: memtest (1) [2] [3]\n"
 		       " 1:device index number\n"
 		       " 2:SDRAM start address\n"
@@ -127,8 +127,9 @@ int handle_memtest(void)
 		start = 0;
 		size = 0;
 	}
+
 	debug_memory(atoi(com_argv[1]), start, size);
-	return 1;
+	return 0;
 }
 
 int handle_gpio(int mode)
@@ -142,12 +143,12 @@ int handle_gpio(int mode)
 	}
 
 	debug_gpio(atoi(com_argv[2]), mode, atoi(com_argv[1]));
-	return 1;
+	return 0;
 }
 
 int handle_load(void)
 {
-	if (com_argc<4) {
+	if (com_argc < 4) {
 		printf(" Usage:"
 		       " load (1) (2) (3) \n"
 		       " 1:SDRAM start address\n"
@@ -158,21 +159,20 @@ int handle_load(void)
 	}
 
 	sdram_in.start=strtoul(com_argv[1], NULL, 0);
-	printf(" start:::::: 0x%x\n", sdram_in.start);
-
 	sdram_in.dev = atoi(com_argv[3]);
 	sdram_in.buf = code_buf;
+
 	sdram_load_file(&sdram_in, com_argv[2]);
-	return 1;
+	return 0;
 }
 
 int command_handle(char *buf)
 {
-	if(buf[0] == '\n')
+	char *p = strtok(buf, "\n ");
+	if(p == NULL)
 		return 0;
 
 	com_argc = 0;
-	char *p = strtok(buf, "\n ");
 	strcpy(com_argv[com_argc++], p);
 
 	while (p = strtok(NULL, "\n "))
@@ -180,6 +180,8 @@ int command_handle(char *buf)
 
 	if (!strcmp("boot", com_argv[0]))
 		boot(stage1, stage2);
+	else if (!strcmp("nprog", com_argv[0]))
+		nand_prog();
 	else if (!strcmp("nquery", com_argv[0]))
 		nand_query();
 	else if (!strcmp("nerase", com_argv[0]))
@@ -192,8 +194,6 @@ int command_handle(char *buf)
 		nand_read(NAND_READ_RAW);
 	else if (!strcmp("nreadoob", com_argv[0]))
 		nand_read(NAND_READ_OOB);
-	else if (!strcmp("nprog", com_argv[0]))
-		nand_prog();
 	else if (!strcmp("gpios", com_argv[0]))
 		handle_gpio(2);
 	else if (!strcmp("gpioc", com_argv[0]))
@@ -209,7 +209,7 @@ int command_handle(char *buf)
 	else if (!strcmp("exit", com_argv[0]))
 		return -1;
 	else
-		printf(" [%s] Not Support!", com_argv[0]);
+		printf(" type `help` show all commands\n", com_argv[0]);
 
 	return 0;
 }
