@@ -406,3 +406,24 @@ int usb_ingenic_sdram_ops(struct ingenic_dev *ingenic_dev, int ops)
 
 	return 1;
 }
+
+int usb_ingenic_reset(struct ingenic_dev *ingenic_dev, int ops)
+{
+	int status;
+	status = usb_control_msg(ingenic_dev->usb_handle,
+          /* bmRequestType */ USB_ENDPOINT_OUT | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
+          /* bRequest      */ VR_RESET,
+          /* wValue        */ ops,
+          /* wIndex        */ 0,
+          /* Data          */ 0,
+          /* wLength       */ 0,
+                              USB_TIMEOUT);
+
+	if (status != 0) {
+		fprintf(stderr, "Error - "
+			"reset XBurst device: %i\n", status);
+		return -1;
+	}
+
+	return 1;
+}

@@ -44,7 +44,7 @@ enum USB_JZ4740_REQUEST	/* add for USB_BOOT */
 	VR_NAND_OPS,
 	VR_SDRAM_OPS,
 	VR_CONFIGRATION,
-	VR_OTHER
+	VR_RESET
 };
 
 #endif	/* __USB_BOOT_H__ */

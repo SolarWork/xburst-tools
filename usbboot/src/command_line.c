@@ -204,6 +204,8 @@ int command_handle(char *buf)
 		debug_go();
 	else if (!strcmp("memtest", com_argv[0]))
 		handle_memtest();
+	else if (!strcmp("reset", com_argv[0]))
+		device_reset(0);
 	else if (!strcmp("help", com_argv[0]))
 		handle_help();
 	else if (!strcmp("exit", com_argv[0]))

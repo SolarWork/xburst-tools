@@ -418,6 +418,9 @@ void usbHandleVendorReq(u8 *buf)
 		SDRAM_OPS_Handle(buf);
 		Bulk_out_size = 0;
 		break;
+	case VR_RESET:
+		ret_state = RESET_Handle(buf);
+		break;
 	}
 }
 

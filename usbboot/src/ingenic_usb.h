@@ -35,7 +35,7 @@
 #define VR_NAND_OPS		0x07
 #define VR_SDRAM_OPS		0x08
 #define VR_CONFIGRATION		0x09
-#define VR_GET_NUM		0x0a
+#define VR_RESET		0x0a
 
 #define JZ4740V1	1
 #define JZ4750V1	2
@@ -77,5 +77,6 @@ int usb_send_data_length_to_ingenic(struct ingenic_dev *ingenic_dev,
 				    int len);
 int usb_ingenic_nand_ops(struct ingenic_dev *ingenic_dev, int ops);
 int usb_read_data_from_ingenic(struct ingenic_dev *ingenic_dev,unsigned char *buff, unsigned int len);
+int usb_ingenic_reset(struct ingenic_dev *ingenic_dev, int ops);
 
 #endif	/* __INGENIC_USB_H__ */

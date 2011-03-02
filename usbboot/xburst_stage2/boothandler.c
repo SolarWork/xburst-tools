@@ -51,8 +51,8 @@ extern void *memset(void *s, int c, size_t count);
 extern void *memcpy(void *dest, const void *src, size_t count);
 
 u32 ret_dat;
-u32 start_addr;  //program operation start address or sector
-u32 ops_length;  //number of operation unit ,in byte or sector
+u32 start_addr;  /* program operation start address or sector */
+u32 ops_length;  /* number of operation unit ,in byte or sector */
 u32 ram_addr;
 
 void dump_data(unsigned int *p, int size)
@@ -117,7 +117,6 @@ int PROGRAM_START1_Handle(u8 *buf)
 {
 	USB_DeviceRequest *dreq = (USB_DeviceRequest *)buf;
 	ram_addr=(((u32)dreq->wValue)<<16)+(u32)dreq->wIndex;
-	//dprintf("\n RAM ADDRESS :%x", ram_addr);
 	return ERR_OK;
 }
 
@@ -127,9 +126,9 @@ int PROGRAM_START2_Handle(u8 *buf)
 	USB_DeviceRequest *dreq = (USB_DeviceRequest *)buf;
 	f=(void *) ((((u32)dreq->wValue)<<16)+(u32)dreq->wIndex);
 	__dcache_writeback_all();
-	//stop udc connet before execute program!
-	jz_writeb(USB_REG_POWER,0x0);   //High speed
-	//dprintf("\n Execute program at %x",(u32)f);
+	/* stop udc connet before execute program! */
+	jz_writeb(USB_REG_POWER,0x0);   /* High speed */
+
 	f();
 	return ERR_OK;
 }
@@ -273,7 +272,6 @@ int SDRAM_OPS_Handle(u8 *buf)
 	switch ((dreq->wValue)&0xf)
 	{
 	case 	SDRAM_LOAD:
-		//dprintf("\n Request : SDRAM_LOAD!");
 		ret_dat = (u32)memcpy((u8 *)start_addr,Bulk_out_buf,ops_length);
 		handshake_PKT[0] = (u16) ret_dat;
 		handshake_PKT[1] = (u16) (ret_dat>>16);
@@ -291,7 +289,6 @@ void Borad_Init()
 	switch (Hand.fw_args.cpu_id)
 	{
 	case 0x4740:
-		//Init nand flash
 		nand_init_4740(Hand.nand_bw, Hand.nand_rc, Hand.nand_ps, 
 			       Hand.nand_ppb, Hand.nand_bbpage, Hand.nand_bbpos,
 			       Hand.nand_force_erase, Hand.nand_eccpos);
@@ -307,7 +304,6 @@ void Borad_Init()
 		nand_mark_bad = nand_mark_bad_4740;
 		break;
 	case 0x4760:
-		//Init nand flash
 		nand_init_4760(Hand.nand_bw, Hand.nand_rc, Hand.nand_ps,
 			       Hand.nand_ppb, Hand.nand_bchbit, Hand.nand_eccpos,
 			       Hand.nand_bbpos, Hand.nand_bbpage, Hand.nand_force_erase);
@@ -351,3 +347,14 @@ int CONFIGRATION_Handle(u8 *buf)
 }
 
 
+int RESET_Handle(u8 *buf)
+{
+	dprintf("\n RESET Device");
+	__wdt_select_extalclk();
+	__wdt_select_clk_div64();
+	__wdt_set_data(100);
+	__wdt_set_count(0);
+	__tcu_start_wdt_clock();
+	__wdt_start();
+	while(1);
+}

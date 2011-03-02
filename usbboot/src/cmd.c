@@ -962,3 +962,11 @@ close:
 out:
 	return res;
 }
+
+int device_reset(int ops)
+{
+	if (usb_ingenic_reset(&ingenic_dev, ops) < 1)
+		return -1;
+
+	return 1;
+}
