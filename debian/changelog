@@ -1,6 +1,6 @@
 xburst-tools (201103-1) unstable; urgency=low
 
-  * add new command `reset`
+  * add new command `reset`, taken from commit 8170afb
 
  -- Xiangfu Liu <xiangfu@sharism.cc>  Thu, 03 Mar 2011 14:43:59 +0800
 
