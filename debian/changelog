@@ -1,3 +1,9 @@
+xburst-tools (201103-1) unstable; urgency=low
+
+  * add new command `reset`
+
+ -- Xiangfu Liu <xiangfu@sharism.cc>  Thu, 03 Mar 2011 14:43:59 +0800
+
 xburst-tools (201012-1) unstable; urgency=low
 
   * fix the nerase always erase good blocks, taken from commit fedb6d8

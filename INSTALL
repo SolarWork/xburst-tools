@@ -11,7 +11,7 @@ Build Requirements: libusb-dev, libconfuse-dev
 
 Build and Installation:
   ./autogen.sh
-  ./configure --enable-firmware --prefix=/usr
+  ./configure --enable-firmware CROSS_COMPILE=mipsel-openwrt-linux- --prefix=/usr --sysconfdir=/etc
   make
   make install
     *) make install will install the 'usbboot' and 'xbboot' binary to /usr/bin/usbboot,
@@ -22,4 +22,4 @@ Buile Debian Package:
   Please read debian/README.source
 
 Create Source tarball, for example, version is: '201007'
-  git archive -v --format=tar 201007 |bzip2 > ../xburst-tools_201007.tar.bz2 
+  git archive -v --format=tar 201007 | bzip2 > ../xburst-tools_201007.tar.bz2 
