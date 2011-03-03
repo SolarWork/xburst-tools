@@ -454,7 +454,6 @@ int nand_program_file(struct nand_in *nand_in,
 				((hand.nand_ps + hand.nand_os) * hand.nand_ppb)
 				+ 1;
 	}
-	/* printf(" length %d flen %d\n", n_in.length, flen); */
 	n_in.cs_map = nand_in->cs_map;
 	n_in.dev = nand_in->dev;
 	n_in.max_chip = nand_in->max_chip;
