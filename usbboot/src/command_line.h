@@ -19,7 +19,6 @@
 #ifndef __COMMAND_LINE_H__
 #define __COMMAND_LINE_H__
 
-int command_input(char *buf);
 int command_handle(char *buf);
 
 #endif	/* __COMMAND_LINE_H__ */

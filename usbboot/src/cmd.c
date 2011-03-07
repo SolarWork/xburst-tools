@@ -29,6 +29,7 @@
 #include "cmd.h"
 #include "ingenic_cfg.h"
 #include "ingenic_usb.h"
+#include "ingenic_request.h"
 #include "usb_boot_defines.h"
 
 extern int com_argc;

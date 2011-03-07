@@ -8,8 +8,7 @@
 # 2 of the License, or (at your option) any later version.
 #
 
-INFLASH_SRC_PATH = ../src
-XBURST_INCLUDE_PATH = ../xburst_include
+XBURST_INCLUDE_PATH = -I../xburst_include -I../src
 
 ifeq ($(CROSS_COMPILE),)
 $(error CROSS_COMPILE variable not set, should point to .../mipsel-openwrt-linux-)
@@ -31,7 +30,7 @@ DEBUG_CFLAGS = -g -Wa,-a=$(basename $@).lst
 # is to disable this optimization right now.
 CFLAGS	= -mips32 -O2 -fno-exceptions -fno-zero-initialized-in-bss \
 	-ffunction-sections -fomit-frame-pointer -msoft-float -G 0 -fpie \
-	-I$(XBURST_INCLUDE_PATH) -I$(INFLASH_SRC_PATH) -D$(DEVICE) 
+	$(XBURST_INCLUDE_PATH) -D$(DEVICE) 
 LDFLAGS	= -nostdlib -T target.ld $(CFLAGS)
 
 OBJS	= main.o udc.o cache.o serial.o boothandler.o nandflash_4740.o nandflash_4760.o

@@ -21,7 +21,7 @@
 extern void usb_main();
 extern unsigned int UART_BASE;
 struct fw_args *fw_args;
-unsigned int start_addr,got_start,got_end;
+unsigned int start_addr, got_start, got_end;
 
 void c_main(void)
 {

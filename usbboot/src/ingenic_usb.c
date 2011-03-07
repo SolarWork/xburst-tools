@@ -22,6 +22,7 @@
 #include <usb.h>
 #include "usb_boot_defines.h"
 #include "ingenic_usb.h"
+#include "ingenic_request.h"
 
 extern unsigned int total_size;
 
