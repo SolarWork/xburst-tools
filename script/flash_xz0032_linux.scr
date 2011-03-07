@@ -3,36 +3,25 @@
 # fixes by whitequark
 
 echo "---- Linux kernel+loader+rootfs flashing script ----"
+
 echo "Including initial config for 4750 XZ0032 board"
-
 source config/boot.cfg
-
 echo "jzboot successfully configured for XZ0032"
-
-echo "Configuring for bootloader IO"
-source script/ecc_boot.scr
-echo "Configured for bootloader IO"
 
 echo "Erasing all flash"
 nerase 0 0 4096
 echo "Erased all flash"
+
 echo "Flashing loader"
 nprogram 0 0 u-boot-nand.bin
-echo "Flashed loader" 
-echo "Flashing kernel"
-nprogram 0 2048 uImage
-echo "Flashed kernel" 
+echo "Flashed loader"
 
-echo "Configuring for rootfs IO"
-set NAND_ECCPOS       24   # Specify the ECC offset inside the oob data (0-[oobsize-1])
-set NAND_BADBLOCKPAGE 127  # Specify the page number of badblock flag inside a block(0-[PAGEPERBLOCK-1])
-set NAND_BCHBIT       4    # Specify the hardware BCH algorithm for 4750 (4|8)
-rebuildcfg
-boot
-echo "Configured for rootfs IO"
+echo "Flashing kernel"
+nprogram 0 512 uImage
+echo "Flashed kernel"
 
 echo "Flashing rootfs"
-nprogram_oob 0 4096 rootfs.yaffs2
+nprogram_oob 0 8192 rootfs.ubifs
 echo "Flashed rootfs"
 
 echo "---- All done ----"
