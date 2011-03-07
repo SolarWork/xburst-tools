@@ -37,6 +37,7 @@ static int handle_help(void)
 {
 	printf(
 	" boot       boot device and make it in stage2\n"
+	" reset      reset device\n"
 	" nprog      program NAND flash\n"
 	" nquery     query NAND flash info\n"
 	" nerase     erase NAND flash\n"
