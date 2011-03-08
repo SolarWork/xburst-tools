@@ -204,10 +204,12 @@ int error_check(unsigned char *org,unsigned char * obj,unsigned int size)
 			       " %02x %02x %02x %02x %02x %02x %02x %02x\n", s,
 				obj[s], obj[s+1], obj[s+2], obj[s+3], obj[s+4], obj[s+5], obj[s+6], obj[s+7],
 				obj[s+8], obj[s+9], obj[s+10], obj[s+11], obj[s+12], obj[s+13], obj[s+14], obj[s+15]);
+			fflush(NULL);
 			return 0;
 		}
 	}
 	printf("SUCCESS\n");
+	fflush(NULL);
 	return 1;
 }
 
@@ -326,6 +328,7 @@ int nand_program_check(struct nand_in *nand_in,
 		    hand.nand_ps == 4096 && 
 		    hand.fw_args.cpu_id == 0x4740) {
 			printf(" no check! End at Page: %d\n", cur_page);
+			fflush(NULL);
 			continue;
 		}
 
@@ -342,6 +345,7 @@ int nand_program_check(struct nand_in *nand_in,
 		}
 
 		printf(" End at Page: %d\n", cur_page);
+		fflush(NULL);
 	}
 
 	*start_page = cur_page;
@@ -470,6 +474,7 @@ int nand_program_file(struct nand_in *nand_in,
 	printf(" Size to send %d, transfer_size %d\n", flen, transfer_size);
 	printf(" Image type : %s\n", IMAGE_TYPE[nand_in->option]);
 	printf(" It will cause %d times buffer transfer.\n", j == 0 ? m : m + 1);
+	fflush(NULL);
 
 #ifdef CONFIG_NAND_OUT
 	for (i = 0; i < nand_in->max_chip; i++)
