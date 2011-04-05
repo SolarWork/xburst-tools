@@ -46,11 +46,34 @@ exit -1 ])
 AC_CHECK_LIB([gcc], [main])
 AC_CHECK_LIB([m], [main])
 AC_CHECK_LIB([usb], [main], [], [
-echo "Error! You need to have libusb. \n"
+echo "Error! You need to have libusb-0.1. \n"
 echo "Maybe run 'sudo apt-get install libusb-dev' under debian"
 exit -1 ])
+AC_CHECK_LIB([usb-1.0], [main], [], [
+echo "Error! You need to have libusb-1.0. \n"
+echo "Maybe run 'sudo apt-get install libusb1.0-0-dev' under debian"
+exit -1 ])
 
-LIBS="$LIBS $USB_LIBS"
+AC_ARG_WITH([readline],
+  [AS_HELP_STRING([--with-readline],
+     [support fancy command line editing @<:@default=check@:>@])],
+     [],
+  [with_readline=check])
+
+READLINE_LIBS=
+AS_IF([test "x$with_readline" != xno],
+  [AC_CHECK_LIB([readline], [main],
+    [AC_SUBST([READLINE_LIBS], ["-lreadline -lncurses"])
+     AC_DEFINE([HAVE_READLINE], [1],
+               [Define if you have libreadline])
+    ],
+    [if test "x$with_readline" != xcheck; then
+      AC_MSG_FAILURE(
+        [--with-readline was given, but test for readline failed])
+     fi
+    ], -lncurses)])
+
+LIBS="$LIBS $USB_LIBS $READLINE_LIBS"
 CFLAGS="$CFLAGS $USB_CFLAGS"
 
 # Checks for header files.
@@ -70,5 +93,5 @@ AC_CHECK_FUNCS([memset strerror])
 AC_CONFIG_FILES(Makefile \
 		usbboot/Makefile usbboot/src/Makefile \
 		xbboot/Makefile xbboot/host-app/Makefile \
-		jzboot/Makefile)
+		jzboot/Makefile jzboot/src/Makefile)
 AC_OUTPUT
