@@ -1,0 +1,3 @@
+[submodule "jzboot"]
+	path = jzboot
+	url = git://projects.qi-hardware.com/jzboot.git
