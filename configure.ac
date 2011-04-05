@@ -69,5 +69,6 @@ AC_CHECK_FUNCS([memset strerror])
 
 AC_CONFIG_FILES(Makefile \
 		usbboot/Makefile usbboot/src/Makefile \
-		xbboot/Makefile xbboot/host-app/Makefile)
+		xbboot/Makefile xbboot/host-app/Makefile \
+		jzboot/Makefile)
 AC_OUTPUT

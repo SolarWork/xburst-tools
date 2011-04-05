@@ -1,1 +1,1 @@
-SUBDIRS = usbboot xbboot
+SUBDIRS = usbboot xbboot jzboot
