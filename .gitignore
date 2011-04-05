@@ -1,7 +1,6 @@
-/.deps/
-/Makefile
-/Makefile.in
-
+.deps
+Makefile
+Makefile.in
 jzboot
 *.o
 *.d

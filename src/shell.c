@@ -17,9 +17,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <config.h>
 #include <string.h>
 #include <stdio.h>
-#ifdef WITH_READLINE
+#ifdef HAVE_LIBREADLINE
 #include <readline/readline.h>
 #include <readline/history.h>
 #endif
@@ -51,7 +52,7 @@ static const struct {
 };
 
 shell_context_t *shell_init(void *ingenic) {
-#ifdef WITH_READLINE
+#ifdef HAVE_LIBREADLINE
 	rl_initialize();
 #endif
 
@@ -303,7 +304,7 @@ int shell_source(shell_context_t *ctx, const char *filename) {
 	return 0;
 }
 
-#ifdef WITH_READLINE
+#ifdef HAVE_LIBREADLINE
 static shell_context_t *completion_context;
 static char **completion_matches;
 static int completion_matches_count = 0;
