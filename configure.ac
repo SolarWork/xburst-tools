@@ -49,10 +49,7 @@ AC_CHECK_LIB([usb], [main], [], [
 echo "Error! You need to have libusb-0.1. \n"
 echo "Maybe run 'sudo apt-get install libusb-dev' under debian"
 exit -1 ])
-AC_CHECK_LIB([usb-1.0], [main], [], [
-echo "Error! You need to have libusb-1.0. \n"
-echo "Maybe run 'sudo apt-get install libusb1.0-0-dev' under debian"
-exit -1 ])
+PKG_CHECK_MODULES([LIBUSB1], [libusb-1.0])
 
 AC_ARG_WITH([readline],
   [AS_HELP_STRING([--with-readline],
@@ -73,8 +70,8 @@ AS_IF([test "x$with_readline" != xno],
      fi
     ], -lncurses)])
 
-LIBS="$LIBS $USB_LIBS $READLINE_LIBS"
-CFLAGS="$CFLAGS $USB_CFLAGS"
+LIBS="$LIBS $USB_LIBS $READLINE_LIBS $LIBUSB1_LIBS"
+CFLAGS="$CFLAGS $USB_CFLAGS $LIBUSB1_CFLAGS"
 
 # Checks for header files.
 AC_HEADER_STDC
