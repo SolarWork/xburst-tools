@@ -23,7 +23,7 @@
 #include <errno.h>
 
 #include "shell.h"
-#include "config.h"
+#include "app_config.h"
 #include "ingenic.h"
 
 static int spl_memtest(shell_context_t *ctx, int argc, char *argv[]);

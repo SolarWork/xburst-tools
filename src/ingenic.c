@@ -27,7 +27,7 @@
 #include "ingenic.h"
 #include "usbdev.h"
 #include "debug.h"
-#include "config.h"
+#include "app_config.h"
 
 #define HANDLE ingenic_handle_t *handle = hndl
 #define BUILDTYPE(cmdset, id) (((cmdset) << 16) | (0x##id & 0xFFFF))

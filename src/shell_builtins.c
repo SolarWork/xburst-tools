@@ -24,7 +24,7 @@
 #include <errno.h>
 
 #include "shell.h"
-#include "config.h"
+#include "app_config.h"
 #include "ingenic.h"
 
 static int builtin_help(shell_context_t *ctx, int argc, char *argv[]);

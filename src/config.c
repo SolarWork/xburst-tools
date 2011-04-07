@@ -21,7 +21,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "config.h"
+#include "app_config.h"
 #include "debug.h"
 
 char **cfg_environ = NULL;
