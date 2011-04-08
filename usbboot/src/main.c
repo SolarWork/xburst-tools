@@ -21,7 +21,7 @@
 #include <getopt.h>
 #include <unistd.h>
 #include <string.h>
-#include "xburst-tools_version.h"
+#include "xburst-tools-config.h"
 #include "command_line.h"
 #include "ingenic_usb.h"
 #include "ingenic_cfg.h"
@@ -43,16 +43,16 @@ static void help(void)
 	       "  -c --command\t\t\tDirect run the commands, split by ';'\n"
 	       "              \t\t\tNOTICE: the max commands count is 10!\n"
 	       "  -f --configure\t\tconfigure file path\n"
-	       "  -1 --stage1\t\tstage1 file path\n"
-	       "  -2 --stage2\t\tstage2 file path\n"
+	       "  -1 --stage1\t\t\tstage1 file path\n"
+	       "  -2 --stage2\t\t\tstage2 file path\n"
 	       "  <run without options to enter commands via usbboot prompt>\n\n"
-	       "Report bugs to <xiangfu@sharism.cc>.\n"
+	       "Report bugs to xiangfu@sharism.cc.\n"
 		);
 }
 
 static void print_version(void)
 {
-	printf("usbboot version: %s\n", XBURST_TOOLS_VERSION);
+	printf("usbboot %s\n", PACKAGE_VERSION);
 }
 
 static struct option opts[] = {
@@ -75,10 +75,6 @@ int main(int argc, char **argv)
 
 	stage1 = STAGE1_FILE_PATH;
 	stage2 = STAGE2_FILE_PATH;
-
-	printf("usbboot - Ingenic XBurst USB Boot Utility\n"
-	       "(c) 2009 Ingenic Semiconductor Inc., Qi Hardware Inc., Xiangfu Liu, Marek Lindner\n"
-	       "This program is Free Software and comes with ABSOLUTELY NO WARRANTY.\n\n");
 
 	while(1) {
 		int c, option_index = 0;
@@ -112,6 +108,10 @@ int main(int argc, char **argv)
 			exit(2);
 		}
 	}
+
+	printf("\nusbboot version %s - Ingenic XBurst USB Boot Utility\n"
+	       "(c) 2009 Ingenic Semiconductor Inc., Qi Hardware Inc., Xiangfu Liu, Marek Lindner\n"
+	       "This program is Free Software and comes with ABSOLUTELY NO WARRANTY.\n\n", PACKAGE_VERSION);
 
 	if (usb_ingenic_init(&ingenic_dev) < 1)
 	 	return EXIT_FAILURE;

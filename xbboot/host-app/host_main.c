@@ -13,7 +13,7 @@
 #include <string.h>
 #include <usb.h>
 #include <time.h>
-#include "xbboot_version.h"
+#include "xburst-tools-config.h"
 
 #define HIWORD(dw)	(((dw) >> 16) & 0xFFFF)
 #define LOWORD(dw)	((dw) & 0xFFFF)
@@ -66,7 +66,7 @@ int main(int argc, char** argv)
 		return EXIT_SUCCESS;
 	}
 	if (!strcmp(argv[1], "-v") || !strcmp(argv[1], "--version")) {
-		printf("xbboot version %s\n", XBBOOT_VERSION);
+		printf("xbboot version %s\n", PACKAGE_VERSION);
 		return EXIT_SUCCESS;
 	}
 
@@ -445,5 +445,5 @@ void show_help()
 	       "  [start2 | VR_PROGRAM_START2] <addr>       branch to <addr> directly\n"
 	       "\n"
 	       "- all numbers can be prefixed 0x for hex otherwise decimal\n"
-	       "\n", XBBOOT_VERSION);
+	       "\n", PACKAGE_VERSION);
 }

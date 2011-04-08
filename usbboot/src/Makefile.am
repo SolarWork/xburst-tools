@@ -1,11 +1,5 @@
 AM_CFLAGS = -pedantic -Wall -W -DCFGDIR=\"$(cfgdir)\" -DDATADIR=\"$(pkgdatadir)\"
 
-xburst-tools_version.h:
-	echo -e '#ifndef XBURST_TOOLS_VERSION' \
-	'\n#define XBURST_TOOLS_VERSION "201103"' \
-	'\n#endif' > xburst-tools_version.h
-BUILT_SOURCES = xburst-tools_version.h
-
 bin_PROGRAMS = usbboot
 usbboot_SOURCES = cmd.c  command_line.c  ingenic_cfg.c  \
 	ingenic_usb.c  main.c

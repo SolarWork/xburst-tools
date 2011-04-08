@@ -22,7 +22,6 @@
 #include "usb_boot_defines.h"
 #include "ingenic_usb.h"
 #include "cmd.h"
-#include "xburst-tools_version.h"
  
 extern struct nand_in nand_in;
 extern struct sdram_in sdram_in;
