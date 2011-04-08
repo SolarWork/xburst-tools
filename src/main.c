@@ -24,6 +24,7 @@
 #include "devmgr.h"
 #include "ingenic.h"
 #include "shell.h"
+#include "xburst-tools-config.h"
 
 static void usage(const char *app) {
 	printf(
@@ -39,7 +40,8 @@ static void usage(const char *app) {
 		" -c <CMD>   Run semicolon-separated commands and exit\n"
                 " -d <DEBUG> Set output level (0 - no reporting, 4 - max reporting), default = 1 (errors only)\n"
                 " -C <FILE>  Execute configuration script FILE before anything else\n"
-		" -b <FILE>  Execute script in FILE\n\n", app);
+		" -b <FILE>  Execute script in FILE\n"
+		" -v         Print program version\n\n", app);
 }
 
 static void dev_handler(int idx, uint16_t vid, uint16_t pid, void *data) {
@@ -51,7 +53,7 @@ int main(int argc, char *argv[]) {
 	int idx = -1, enumerate = 0;
 	char *cmd = NULL, *script = NULL, *config = NULL;
 
-	while((ch = getopt(argc, argv, "b:i:ec:d:C:")) != -1) {
+	while((ch = getopt(argc, argv, "b:i:ec:d:C:v")) != -1) {
 		switch(ch) {
 		case 'e':
 			enumerate = 1;
@@ -82,6 +84,11 @@ int main(int argc, char *argv[]) {
 			set_debug_level(atoi(optarg));
 
 			break;
+
+		case 'v':
+			printf("%s %s\n", argv[0], PACKAGE_VERSION);
+
+			return 0;
 
 		default:
 			usage(argv[0]);
