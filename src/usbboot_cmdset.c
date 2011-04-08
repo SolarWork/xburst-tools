@@ -23,7 +23,6 @@
 #include "shell.h"
 #include "app_config.h"
 #include "ingenic.h"
-#include <config.h>
 
 static int usbboot_boot(shell_context_t *ctx, int argc, char *argv[]);
 static int usbboot_load(shell_context_t *ctx, int argc, char *argv[]);
