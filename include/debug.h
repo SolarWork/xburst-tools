@@ -21,6 +21,7 @@
 
 void set_debug_level(int level);
 int get_debug_level();
+void hexdump(const void *data, size_t size);
 
 void debug(int level, const char *fmt, ...);
 

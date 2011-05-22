@@ -23,10 +23,12 @@
 #include "shell.h"
 #include "app_config.h"
 #include "ingenic.h"
+#include "elfldr.h"
 
 static int usbboot_boot(shell_context_t *ctx, int argc, char *argv[]);
 static int usbboot_load(shell_context_t *ctx, int argc, char *argv[]);
 static int usbboot_go(shell_context_t *ctx, int argc, char *argv[]);
+static int usbboot_load_kernel(shell_context_t *ctx, int argc, char *argv[]);
 static int usbboot_nquery(shell_context_t *ctx, int argc, char *argv[]);
 static int usbboot_ndump(shell_context_t *ctx, int argc, char *argv[]);
 static int usbboot_nerase(shell_context_t *ctx, int argc, char *argv[]);
@@ -38,6 +40,7 @@ const shell_command_t usbboot_cmdset[] = {
 	{ "boot", "Reconfigure stage2", usbboot_boot, NULL },
 	{ "load", "Load file to SDRAM", usbboot_load, "<FILE> <BASE>" },
 	{ "go", "Jump to <ADDRESS>", usbboot_go, "<ADDRESS>" },
+	{ "load_kernel", "Load ELF kernel and initrd to memory", usbboot_load_kernel, "<KERNEL> <CMDLINE> [INITRAMFS]" },
 
 	{ "nquery", "Query NAND information", usbboot_nquery, "<DEVICE>" },
 	{ "ndump", "Dump NAND to file", usbboot_ndump, "<DEVICE> <STARTPAGE> <PAGES> <FILE>" },
@@ -151,3 +154,9 @@ static int usbboot_nload(shell_context_t *ctx, int argc, char *argv[]) {
 	
 	return ret;
 }
+
+static int usbboot_load_kernel(shell_context_t *ctx, int argc, char *argv[]) {
+	return load_elf(shell_device(ctx), argv[1], argv[2],
+	                argc == 4 ? argv[3] : NULL);
+}
+

@@ -67,40 +67,6 @@ static const struct {
 	{ NULL, 0 }
 };
 
-static void hexdump(const void *data, size_t size) {
-        const unsigned char *bytes = data;
-
-        for(int i = 0; i < size; i+= 16) {
-                debug(LEVEL_DEBUG, "%04X  ", i);
-
-                int chunk_size = size - i;
-		if(chunk_size > 16)
-			chunk_size = 16;
-
-                for(int j = 0; j < chunk_size; j++) {
-                        debug(LEVEL_DEBUG, "%02X ", bytes[i + j]);
-
-                        if(j == 7)
-                                debug(LEVEL_DEBUG, " ");
-                }
-
-                for(int j = 0; j < 16 - chunk_size; j++) {
-                        debug(LEVEL_DEBUG, "   ");
-
-                        if(j == 8)
-                                debug(LEVEL_DEBUG, " ");
-                }
-
-                debug(LEVEL_DEBUG, "|");
-
-                for(int j = 0; j < chunk_size; j++) {
-                        debug(LEVEL_DEBUG, "%c", isprint(bytes[i + j]) ? bytes[i + j] : '.');
-                }
-
-                debug(LEVEL_DEBUG, "|\n");
-        }
-}
-
 static uint32_t ingenic_probe(void *usb_hndl) {
 	char magic[9];
 
