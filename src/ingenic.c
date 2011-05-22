@@ -34,9 +34,22 @@
 #define CPUID(id) ((id) & 0xFFFF)
 #define CMDSET(id) (((id) & 0xFFFF0000) >> 16)
 
-#define CFGOPT(name, var, exp) { char *str = cfg_getenv(name); if(str == NULL) { debug(LEVEL_ERROR, "%s is not set\n", name); errno = EINVAL; return -1; }; int v = atoi(str); if(!(exp)) { debug(LEVEL_ERROR, "%s must be in %s\n", name, #exp); return -1; }; handle->cfg.var = v; }
+#define CFGOPT(name, var, exp) { \
+	char *str = cfg_getenv(name); \
+	if(str == NULL) { \
+		debug(LEVEL_ERROR, "%s is not set\n", name); errno = EINVAL; return -1; }; \
+		int v = atoi(str); \
+		if(!(exp)) { debug(LEVEL_ERROR, "%s must be in %s\n", name, #exp); return -1; }; \
+		var = v; \
+	}
 
-#define NOPT(name, var, exp) { char *str = cfg_getenv("NAND_" name); if(str == NULL) { debug(LEVEL_ERROR, "%s is not set\n", "NAND_" name); errno = EINVAL; return -1; }; int v = atoi(str); if(!(exp)) { debug(LEVEL_ERROR, "%s must be in %s\n", "NAND_" name, #exp); return -1; }; handle->nand.nand_##var = v; }
+#define NOPT(name, var, exp) { \
+	char *str = cfg_getenv("NAND_" name); \
+	if(str == NULL) { debug(LEVEL_ERROR, "%s is not set\n", "NAND_" name); errno = EINVAL; return -1; }; \
+	int v = atoi(str); \
+	if(!(exp)) { debug(LEVEL_ERROR, "%s must be in %s\n", "NAND_" name, #exp); return -1; }; \
+	var = v; \
+}
 
 #define CALLBACK(function, ...) if(handle->callbacks && handle->callbacks->function) handle->callbacks->function(__VA_ARGS__, handle->callbacks_data)
 
@@ -144,24 +157,25 @@ void ingenic_close(void *hndl) {
 
 int ingenic_rebuild(void *hndl) {
 	HANDLE;
+	unsigned int cpu_speed;	/* the uint8_t in handle structure won't do for values > 255 */
 
 	handle->cfg.cpu_id = CPUID(handle->type);
 
-	CFGOPT("EXTCLK", ext_clk, v <= 27 && v >= 12);
+	CFGOPT("EXTCLK", handle->cfg.ext_clk, v <= 27 && v >= 12);
 	CFGOPT("CPUSPEED", cpu_speed, (v % 12) == 0);
-	handle->cfg.cpu_speed /= handle->cfg.ext_clk;
-	CFGOPT("PHMDIV", phm_div, v <= 32 && v >= 2);
-	CFGOPT("USEUART", use_uart, 1);
-	CFGOPT("BAUDRATE", baudrate, 1);
+	handle->cfg.cpu_speed = cpu_speed / handle->cfg.ext_clk;
+	CFGOPT("PHMDIV", handle->cfg.phm_div, v <= 32 && v >= 2);
+	CFGOPT("USEUART", handle->cfg.use_uart, 1);
+	CFGOPT("BAUDRATE", handle->cfg.baudrate, 1);
 
-	CFGOPT("SDRAM_BUSWIDTH", bus_width, (v == 16) || (v == 32));
+	CFGOPT("SDRAM_BUSWIDTH", handle->cfg.bus_width, (v == 16) || (v == 32));
 	handle->cfg.bus_width = handle->cfg.bus_width == 16 ? 1 : 0;
-	CFGOPT("SDRAM_BANKS", bank_num, (v >= 4) && ((v % 4) == 0));
+	CFGOPT("SDRAM_BANKS", handle->cfg.bank_num, (v >= 4) && ((v % 4) == 0));
 	handle->cfg.bank_num /= 4;
-	CFGOPT("SDRAM_ROWADDR", row_addr, 1);
-	CFGOPT("SDRAM_COLADDR", col_addr, 1);
-	CFGOPT("SDRAM_ISMOBILE", is_mobile, v == 0 || v == 1);
-	CFGOPT("SDRAM_ISBUSSHARE", is_busshare, v == 0 || v == 1);
+	CFGOPT("SDRAM_ROWADDR", handle->cfg.row_addr, 1);
+	CFGOPT("SDRAM_COLADDR", handle->cfg.col_addr, 1);
+	CFGOPT("SDRAM_ISMOBILE", handle->cfg.is_mobile, v == 0 || v == 1);
+	CFGOPT("SDRAM_ISBUSSHARE", handle->cfg.is_busshare, v == 0 || v == 1);
 
 	memset(&handle->cfg.debug, 0, sizeof(ingenic_stage1_debug_t));
 
@@ -172,20 +186,20 @@ int ingenic_rebuild(void *hndl) {
 
 	handle->nand.cpuid = CPUID(handle->type);
 
-	NOPT("BUSWIDTH", bw, 1);
-	NOPT("ROWCYCLES", rc, 1);
-	NOPT("PAGESIZE", ps, 1);
-	NOPT("PAGEPERBLOCK", ppb, 1);
-	NOPT("FORCEERASE", force_erase, 1);
+	NOPT("BUSWIDTH", handle->nand.nand_bw, 1);
+	NOPT("ROWCYCLES", handle->nand.nand_rc, 1);
+	NOPT("PAGESIZE", handle->nand.nand_ps, 1);
+	NOPT("PAGEPERBLOCK", handle->nand.nand_ppb, 1);
+	NOPT("FORCEERASE", handle->nand.nand_force_erase, 1);
 // FIXME: pn is not set by xburst-tools usbboot. Is this intended?
-	NOPT("OOBSIZE", os, 1);
-	NOPT("ECCPOS", eccpos, 1);
-	NOPT("BADBLOCKPOS", bbpos, 1);
-	NOPT("BADBLOCKPAGE", bbpage, 1);
-	NOPT("PLANENUM", plane, 1);
-	NOPT("BCHBIT", bchbit, 1);
-	NOPT("WPPIN", wppin, 1);
-	NOPT("BLOCKPERCHIP", bpc, 1);
+	NOPT("OOBSIZE", handle->nand.nand_os, 1);
+	NOPT("ECCPOS", handle->nand.nand_eccpos, 1);
+	NOPT("BADBLOCKPOS", handle->nand.nand_bbpos, 1);
+	NOPT("BADBLOCKPAGE", handle->nand.nand_bbpage, 1);
+	NOPT("PLANENUM", handle->nand.nand_plane, 1);
+	NOPT("BCHBIT", handle->nand.nand_bchbit, 1);
+	NOPT("WPPIN", handle->nand.nand_wppin, 1);
+	NOPT("BLOCKPERCHIP", handle->nand.nand_bpc, 1);
 
 	return 0;
 }
