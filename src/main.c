@@ -86,7 +86,7 @@ int main(int argc, char *argv[]) {
 			break;
 
 		case 'v':
-			printf("%s %s\n", argv[0], PACKAGE_VERSION);
+			printf("JZboot version %s\n", PACKAGE_VERSION);
 
 			return 0;
 
