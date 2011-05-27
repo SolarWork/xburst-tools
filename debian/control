@@ -4,12 +4,13 @@ Priority: extra
 Maintainer: Xiangfu Liu <xiangfu@sharism.cc>
 Build-Depends: debhelper (>= 7.4.10),
 	pkg-config, autoconf, automake,
-	libusb-dev, libconfuse-dev
+	libusb-dev, libconfuse-dev, libusb-1.0-0-dev,
+	libreadline-dev
 Build-Conflicts: automake1.4
 Standards-Version: 3.9.1
 Vcs-Git: git://projects.qi-hardware.com/xburst-tools.git
-Vcs-Browser: http://projects.qi-hardware.com/index.php/p/xburst-tools/source/changes/master/
-Homepage: http://projects.qi-hardware.com/index.php/p/xburst-tools/
+Vcs-Browser: http://projects.qi-hardware.com/p/xburst-tools/source/changes/master/
+Homepage: http://projects.qi-hardware.com/p/xburst-tools/
 
 Package: xburst-tools
 Architecture: any
