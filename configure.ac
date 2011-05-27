@@ -53,7 +53,7 @@ AC_CHECK_LIB([usb], [main], [], [
 
 PKG_CHECK_MODULES(LIBUSB, libusb-1.0 > 1.0,
   [LIBS="$LIBS $LIBUSB_LIBS" CFLAGS="$CFLAGS $LIBUSB_CFLAGS"],
-  AC_MSG_ERROR(Maybe run 'sudo apt-get install libusb1.0-0-dev' under debian"))
+  AC_MSG_ERROR(Maybe run 'sudo apt-get install libusb-1.0-0-dev' under debian"))
 
 AC_ARG_WITH([readline],
   [AS_HELP_STRING([--with-readline],
