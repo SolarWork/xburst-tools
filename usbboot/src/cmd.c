@@ -40,7 +40,6 @@ struct ingenic_dev ingenic_dev;
 struct hand hand;
 struct sdram_in sdram_in;
 struct nand_in nand_in;
-static struct nand_out nand_out;
 
 unsigned int total_size;
 unsigned char code_buf[4 * 512 * 1024];
@@ -230,9 +229,7 @@ int nand_markbad(struct nand_in *nand_in)
 	return 0;
 }
 
-int nand_program_check(struct nand_in *nand_in,
-		       struct nand_out *nand_out,
-		       unsigned int *start_page)
+int nand_program_check(struct nand_in *nand_in, unsigned int *start_page)
 {
 	unsigned int i, page_num, cur_page = -1;
 	unsigned int start_addr;
@@ -244,13 +241,6 @@ int nand_program_check(struct nand_in *nand_in,
 		printf(" Buffer size too long!\n");
 		goto err;
 	}
-
-#ifdef CONFIG_NAND_OUT
-	unsigned char status_buf[32];
-	nand_out->status = status_buf;
-	for (i = 0; i < nand_in->max_chip; i++)
-		(nand_out->status)[i] = 0; /* set all status to fail */
-#endif
 
 	int cpu = usb_get_ingenic_cpu(&ingenic_dev);
 	if (cpu != BOOT4740 && cpu != BOOT4750 && cpu != BOOT4760) {
@@ -320,12 +310,7 @@ int nand_program_check(struct nand_in *nand_in,
 		cur_page = (ret[3] << 24) | (ret[2] << 16) |  (ret[1] << 8) | 
 			(ret[0] << 0);
 
-#ifdef CONFIG_NAND_OUT
-		(nand_out->status)[i] = 1;
-#endif
-
-		if (nand_in->start < 1 && 
-		    hand.nand_ps == 4096 && 
+		if (nand_in->start == 0 && hand.nand_ps == 4096 &&
 		    hand.fw_args.cpu_id == 0x4740) {
 			printf(" no check! End at Page: %d\n", cur_page);
 			fflush(NULL);
@@ -333,9 +318,6 @@ int nand_program_check(struct nand_in *nand_in,
 		}
 
 		if (!nand_in->check(nand_in->buf, check_buf, nand_in->length)) {
-#ifdef CONFIG_NAND_OUT
-			(nand_out->status)[i] = 0;
-#endif
 			struct nand_in bad;
 			// tbd: doesn't the other side skip bad blocks too? Can we just deduct 1 from cur_page?
 			// tbd: why do we only mark a block as bad if the last page in the block was written?
@@ -409,9 +391,7 @@ int nand_erase(struct nand_in *nand_in)
 	return 1;
 }
 
-int nand_program_file(struct nand_in *nand_in,
-		      struct nand_out *nand_out,
-		      char *fname)
+int nand_program_file(struct nand_in *nand_in, char *fname)
 {
 
 	int flen, m, j, k;
@@ -419,14 +399,7 @@ int nand_program_file(struct nand_in *nand_in,
 	int fd, status;
 	struct stat fstat;
 	struct nand_in n_in;
-	struct nand_out n_out;
 
-#ifdef CONFIG_NAND_OUT
-	unsigned char status_buf[32];
-	nand_out->status = status_buf;
-	for (i=0; i<nand_in->max_chip; i++)
-		(nand_out->status)[i] = 0; /* set all status to fail */
-#endif
 	status = stat(fname, &fstat);
 
 	if (status < 0) {
@@ -476,11 +449,6 @@ int nand_program_file(struct nand_in *nand_in,
 	printf(" It will cause %d times buffer transfer.\n", j == 0 ? m : m + 1);
 	fflush(NULL);
 
-#ifdef CONFIG_NAND_OUT
-	for (i = 0; i < nand_in->max_chip; i++)
-		(nand_out->status)[i] = 1; /* set all status to success! */
-#endif
-
 	offset = 0; 
 	for (k = 0; k < m; k++)	{
 		if (nand_in->option == NO_OOB)
@@ -498,19 +466,13 @@ int nand_program_file(struct nand_in *nand_in,
 
 		nand_in->length = code_len; /* code length,not page number! */
 		nand_in->buf = code_buf;
-		if (nand_program_check(nand_in, &n_out, &start_page) == -1)
+		if (nand_program_check(nand_in, &start_page) == -1)
 			return -1;
 
 		if (start_page - nand_in->start > hand.nand_ppb)
 			printf(" Info - skip bad block!\n");
 		nand_in->start = start_page;
 
-#ifdef CONFIG_NAND_OUT
-		for (i = 0; i < nand_in->max_chip; i++) {
-			(nand_out->status)[i] = (nand_out->status)[i] * 
-				(n_out.status)[i];
-		}
-#endif
 		offset += code_len ;
 	}
 
@@ -530,27 +492,19 @@ int nand_program_file(struct nand_in *nand_in,
 
 		nand_in->length = j;
 		nand_in->buf = code_buf;
-		if (nand_program_check(nand_in, &n_out, &start_page) == -1) 
+		if (nand_program_check(nand_in, &start_page) == -1)
 			return -1;
 
 		if (start_page - nand_in->start > hand.nand_ppb)
 			printf(" Info - skip bad block!");
 
-#ifdef CONFIG_NAND_OUT
-		for (i=0; i < nand_in->max_chip; i++) {
-			(nand_out->status)[i] = (nand_out->status)[i] *
-				(n_out.status)[i];
-		}
-#endif
 	}
 	
 	close(fd);
 	return 1;
 }
 
-int nand_program_file_planes(struct nand_in *nand_in,
-		      struct nand_out *nand_out,
-		      char *fname)
+int nand_program_file_planes(struct nand_in *nand_in, char *fname)
 {
 	printf("  not implement yet !\n");
 	return -1;
@@ -604,16 +558,9 @@ int nand_prog(void)
 		printf("%s", help);
 
 	if (hand.nand_plane > 1)
-		nand_program_file_planes(&nand_in, &nand_out, image_file);
+		nand_program_file_planes(&nand_in, image_file);
 	else
-		nand_program_file(&nand_in, &nand_out, image_file);
-
-#ifdef CONFIG_NAND_OUT
-	printf(" Flash check result:\n");
-	int i;
-	for (i = 0; i < 16; i++)
-		printf(" %d", (nand_out.status)[i]);
-#endif
+		nand_program_file(&nand_in, image_file);
 
 	status = 1;
 err:
