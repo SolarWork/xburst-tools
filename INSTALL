@@ -10,6 +10,7 @@ Build Requirements: libusb-dev, libconfuse-dev
     http://en.qi-hardware.com/wiki/Building_Software_Image
 
 Build and Installation:
+  git submodule update --init
   ./autogen.sh
   ./configure --enable-firmware CROSS_COMPILE=mipsel-openwrt-linux- --prefix=/usr --sysconfdir=/etc
   make
