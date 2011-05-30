@@ -1,8 +1,9 @@
-xburst-tools version: 201103
+xburst-tools version: 201105
   [ Xiangfu Liu ]
-  * add new command jzboot
-  * add jzboot depends to debian/
-  * fix the check when startpage = 0
+  * add new xburst tool: jzboot:
+    http://projects.qi-hardware.com/index.php/p/jzboot/
+  * debian/control: add jzboot depends
+  * when startpage == 0 do NOT check the nand data
 
 xburst-tools version: 201103
   [ Xiangfu Liu ]
