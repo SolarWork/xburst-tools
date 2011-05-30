@@ -1,6 +1,7 @@
-xburst-tools (201103-1) unstable; urgency=low
+xburst-tools (201105-1) unstable; urgency=low
 
-  * add new command `reset`, taken from commit 8170afb
+  * add new tool name `jzboot`, taken from commit 1d7a2f3
+  * add new command `reset` to usbboot
 
  -- Xiangfu Liu <xiangfu@sharism.cc>  Thu, 03 Mar 2011 14:43:59 +0800
 
