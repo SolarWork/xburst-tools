@@ -1,5 +1,14 @@
+xburst-tools version: 201103
+  [ Xiangfu Liu ]
+  * add new command jzboot
+  * add jzboot depends to debian/
+  * fix the check when startpage = 0
+
+xburst-tools version: 201103
+  [ Xiangfu Liu ]
   * new command `reset`
   * some code style cleanup
+
 xburst-tools version: 201012
   [ Xiangfu Liu ]
   * usbboot: don't skip bad block when nand erase
