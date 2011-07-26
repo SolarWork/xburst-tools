@@ -107,7 +107,7 @@ struct fw_args {
 	unsigned char is_busshare;
 
 	/* debug args */
-	unsigned char debug_ops;
+	char debug_ops;
 	unsigned char pin_num;
 	unsigned int  start;
 	unsigned int  size;
