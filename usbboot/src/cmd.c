@@ -134,7 +134,7 @@ void init_cfg()
 {
 	int cpu = get_ingenic_cpu();
 	if (cpu != BOOT4740 && cpu != BOOT4750 && cpu != BOOT4760) {
-		printf(" Device unboot! Boot it first!\n");
+		printf(" Device unboot! boot it first!\n");
 		return;
 	}
 
@@ -221,10 +221,10 @@ int nand_markbad(struct nand_in *nand_in)
 {
 	int cpu = get_ingenic_cpu();
 	if (cpu != BOOT4740 && cpu != BOOT4750 && cpu != BOOT4760) {
-		printf(" Device unboot! Boot it first!\n");
+		printf(" Device unboot! boot it first!\n");
 		return -1;
 	}
-	printf(" mark bad block : %d\n",nand_in->start);
+	printf(" Mark bad block : %d\n",nand_in->start);
 	usb_send_data_address_to_ingenic(&ingenic_dev, nand_in->start);
 	usb_ingenic_nand_ops(&ingenic_dev, NAND_MARK_BAD);
 	usb_read_data_from_ingenic(&ingenic_dev, ret, 8);
@@ -250,7 +250,7 @@ int nand_program_check(struct nand_in *nand_in, unsigned int *start_page)
 
 	int cpu = get_ingenic_cpu();
 	if (cpu != BOOT4740 && cpu != BOOT4750 && cpu != BOOT4760) {
-		printf(" Device unboot! Boot it first!\n");
+		printf(" Device unboot! boot it first!\n");
 		goto err;
 	}
 
@@ -318,7 +318,7 @@ int nand_program_check(struct nand_in *nand_in, unsigned int *start_page)
 
 		if (nand_in->start == 0 && hand.nand_ps == 4096 &&
 		    hand.fw_args.cpu_id == 0x4740) {
-			printf(" no check! End at Page: %d\n", cur_page);
+			printf(" No check! end at page: %d\n", cur_page);
 			fflush(NULL);
 			continue;
 		}
@@ -332,7 +332,7 @@ int nand_program_check(struct nand_in *nand_in, unsigned int *start_page)
 				nand_markbad(&bad);
 		}
 
-		printf(" End at Page: %d\n", cur_page);
+		printf(" End at page: %d\n", cur_page);
 		fflush(NULL);
 	}
 
@@ -361,7 +361,7 @@ int nand_erase(struct nand_in *nand_in)
 
 	int cpu = get_ingenic_cpu();
 	if (cpu != BOOT4740 && cpu != BOOT4750 && cpu != BOOT4760) {
-		printf(" Device unboot! Boot it first!\n");
+		printf(" Device unboot! boot it first!\n");
 		return -1;
 	}
 
@@ -599,7 +599,7 @@ int nand_query(void)
 
 	int cpu = get_ingenic_cpu();
 	if (cpu != BOOT4740 && cpu != BOOT4750 && cpu != BOOT4760) {
-		printf(" Device unboot! Boot it first!\n");
+		printf(" Device unboot! boot it first!\n");
 		return -1;
 	}
 
@@ -622,54 +622,48 @@ int nand_query(void)
 
 int nand_read(int mode)
 {
-	unsigned int i,j;
+	unsigned int i, j, cpu;
 	unsigned int start_addr, length, page_num;
 	unsigned char csn;
 	unsigned short temp = 0;
-	unsigned ram_addr = 0;
 
 	if (com_argc < 5) {
 		printf(" Usage: nread (1) (2) (3) (4)\n"
 		       " 1:start page number\n"
 		       " 2:length in byte\n"
 		       " 3:device index number\n"
-		       " 4:flash index number\n"
-		       " 5:start SDRAM address\n");
+		       " 4:flash index number\n");
 		return -1;
 	}
+
 	init_nand_in();
 
-	if (atoi(com_argv[4]) >= MAX_DEV_NUM) {
+	nand_in.start  = atoi(com_argv[1]);
+	nand_in.length = atoi(com_argv[2]);
+	nand_in.dev    = atoi(com_argv[3]);
+
+	csn        = atoi(com_argv[4]);
+	start_addr = nand_in.start;
+	length     = nand_in.length;
+
+	if (csn >= MAX_DEV_NUM) {
 		printf(" Flash index number overflow!\n");
 		return -1;
 	}
-	(nand_in.cs_map)[atoi(com_argv[4])] = 1;
-	nand_in.start = atoi(com_argv[1]);
-	nand_in.length= atoi(com_argv[2]);
-	nand_in.dev = atoi(com_argv[3]);
-
-	if (com_argc = 6) {
-		ram_addr = strtoul(com_argv[5], NULL, 0);
-		printf("==%s==", com_argv[5]);
-	}
-	start_addr = nand_in.start;
-	length = nand_in.length;
+	nand_in.cs_map[csn] = 1;
 
 	if (start_addr > NAND_MAX_PAGE_NUM || length > NAND_MAX_PAGE_NUM ) {
 		printf(" Page number overflow!\n");
 		return -1;
 	}
-	int cpu = get_ingenic_cpu();
+
+	cpu = get_ingenic_cpu();
 	if (cpu != BOOT4740 && cpu != BOOT4750 && cpu != BOOT4760) {
-		printf(" Device unboot! Boot it first!\n");
+		printf(" Device unboot! boot it first!\n");
 		return -1;
 	}
-	for (i = 0; i < nand_in.max_chip; i++)
-		if ((nand_in.cs_map)[i] != 0)
-			break;
-	if (i >= nand_in.max_chip) return 1;
-	csn = i;
-	printf(" Reading from No.%d device No.%d flash....\n",nand_in.dev,csn);
+
+	printf(" Reading from No.%d device No.%d flash....\n", nand_in.dev, csn);
 
 	page_num = length / hand.nand_ps +1;
 
@@ -684,14 +678,8 @@ int nand_read(int mode)
 		temp = ((NO_OOB<<12) & 0xf000) + ((csn<<4) & 0xff0) +
 			NAND_READ_RAW;
 		break;
-	case NAND_READ_TO_RAM:
-		temp = ((NO_OOB<<12) & 0xf000) + ((csn<<4) & 0xff0) +
-			NAND_READ_TO_RAM;
-		printf(" Reading nand to RAM: 0x%x\n", ram_addr);
-		usb_ingenic_start(&ingenic_dev, VR_PROGRAM_START1, ram_addr);
-		break;
 	default:
-		printf(" unknow mode!\n");
+		printf(" Unknow mode!\n");
 		return -1;
 	}
 
@@ -704,7 +692,7 @@ int nand_read(int mode)
 
 	for (j = 0; j < length; j++) {
 		if (j % 16 == 0)
-		printf("\n 0x%08x : ",j);
+			printf("\n 0x%08x : ",j);
 		printf("%02x ",(nand_in.buf)[j]);
 	}
 	printf("\n");
@@ -834,7 +822,7 @@ int sdram_load(struct sdram_in *sdram_in)
 {
 	int cpu = get_ingenic_cpu();
 	if (cpu != BOOT4740 && cpu != BOOT4750 && cpu != BOOT4760) {
-		printf(" Device unboot! Boot it first!\n");
+		printf(" Device unboot! boot it first!\n");
 		return -1;
 	}
 
@@ -929,7 +917,7 @@ int device_reset(int ops)
 {
 	int cpu = get_ingenic_cpu();
 	if (cpu != BOOT4740 && cpu != BOOT4750 && cpu != BOOT4760) {
-		printf(" Device unboot! Boot it first!\n");
+		printf(" Device unboot! boot it first!\n");
 		return -1;
 	}
 
