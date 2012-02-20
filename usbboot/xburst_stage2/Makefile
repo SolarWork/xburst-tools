@@ -11,7 +11,7 @@
 XBURST_INCLUDE_PATH = -I../xburst_include -I../src
 
 ifeq ($(CROSS_COMPILE),)
-$(error CROSS_COMPILE variable not set, should point to .../mipsel-openwrt-linux-)
+$(warning CROSS_COMPILE variable not set, should point to .../mipsel-openwrt-linux-)
 endif
 
 CC	= $(CROSS_COMPILE)gcc

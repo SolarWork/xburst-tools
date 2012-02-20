@@ -11,7 +11,7 @@ INFLASH_SRC_PATH = ../src
 XBURST_INCLUDE_PATH = ../xburst_include
 
 ifeq ($(CROSS_COMPILE),)
-$(error CROSS_COMPILE variable not set, should point to .../mipsel-openwrt-linux-)
+$(warning CROSS_COMPILE variable not set, should point to .../mipsel-openwrt-linux-)
 endif
 
 CFLAGS	:= -O2 -fno-unit-at-a-time -fno-zero-initialized-in-bss -mips32 -fno-pic \

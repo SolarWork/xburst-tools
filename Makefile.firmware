@@ -1,0 +1,16 @@
+
+all:
+	make -C usbboot/xburst_stage1
+	make -C usbboot/xburst_stage2
+	make -C xbboot/target-stage1
+
+clean:
+	make -C usbboot/xburst_stage1 clean
+	make -C usbboot/xburst_stage2 clean
+	make -C xbboot/target-stage1  clean
+
+install: all
+	install -d ${datadir}/xburst-tools/
+	install -m 644 usbboot/xburst_stage1/xburst_stage1.bin ${datadir}/xburst-tools
+	install -m 644 usbboot/xburst_stage1/xburst_stage2.bin ${datadir}/xburst-tools
+	install -m 644 xbboot/target-stage1/stage1.bin         ${datadir}/xburst-tools

@@ -8,7 +8,7 @@
 #
 
 ifeq ($(CROSS_COMPILE),)
-$(error CROSS_COMPILE variable not set, should point to .../mipsel-openwrt-linux-)
+$(warning CROSS_COMPILE variable not set, should point to .../mipsel-openwrt-linux-)
 endif
 
 INCPATH = -I. -I../target-common/
