@@ -71,7 +71,7 @@ void config_hand()
 	memcpy(&Hand, (unsigned char *)Bulk_out_buf, sizeof(struct hand));
 }
 
-int GET_CUP_INFO_Handle()
+int GET_CPU_INFO_Handle()
 {
 	dprintf("\n GET_CPU_INFO:\t");
 	serial_put_hex(Hand.fw_args.cpu_id);
@@ -282,9 +282,9 @@ int SDRAM_OPS_Handle(u8 *buf)
 	return ERR_OK;
 }
 
-void Borad_Init()
+void Board_Init()
 {
-	dprintf("\n Borad_init! ");
+	dprintf("\n Board_init! ");
 	serial_put_hex(Hand.fw_args.cpu_id);
 	switch (Hand.fw_args.cpu_id)
 	{
@@ -342,7 +342,7 @@ int CONFIGRATION_Handle(u8 *buf)
 		;
 	}
 
-	Borad_Init();
+	Board_Init();
 	return ERR_OK;
 }
 
