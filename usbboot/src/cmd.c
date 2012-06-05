@@ -26,6 +26,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <ctype.h>
+#include <byteswap.h>
 #include "cmd.h"
 #include "ingenic_cfg.h"
 #include "ingenic_usb.h"
@@ -85,9 +86,24 @@ static int load_file(struct ingenic_dev *ingenic_dev, const char *file_path)
 		goto close;
 	}
 
+	struct fw_args *fw_args_copy = malloc(sizeof(struct fw_args));
+	if (!fw_args_copy)
+		goto close;
+
+	memcpy(fw_args_copy, &hand.fw_args, sizeof(struct fw_args));
+
+#if defined (__BIG_ENDIAN__) || defined(MIPSEB)
+	fw_args_copy->cpu_id   = bswap_32(fw_args_copy->cpu_id);
+	fw_args_copy->boudrate = bswap_32(fw_args_copy->boudrate);
+	fw_args_copy->start    = bswap_32(fw_args_copy->start);
+	fw_args_copy->size     = bswap_32(fw_args_copy->size);
+#endif
+
 	/* write args to code */
-	memcpy(ingenic_dev->file_buff + 8, &hand.fw_args,
+	memcpy(ingenic_dev->file_buff + 8, fw_args_copy,
 	       sizeof(struct fw_args));
+
+	free(fw_args_copy);
 
 	res = 1;
 
@@ -138,10 +154,42 @@ void init_cfg()
 		return;
 	}
 
-	ingenic_dev.file_buff = &hand;
-	ingenic_dev.file_len = sizeof(hand);
+	struct hand *hand_copy = malloc(sizeof(struct hand));
+	if (!hand_copy)
+		goto xout;
+
+	memcpy(hand_copy, &hand, sizeof(struct hand));
+
+#if defined (__BIG_ENDIAN__) || defined(MIPSEB)
+	hand_copy->fw_args.cpu_id   = bswap_32(hand.fw_args.cpu_id);
+	hand_copy->fw_args.boudrate = bswap_32(hand.fw_args.boudrate);
+	hand_copy->fw_args.start    = bswap_32(hand.fw_args.start);
+	hand_copy->fw_args.size     = bswap_32(hand.fw_args.size);
+
+	hand_copy->pt		    = bswap_32(hand.pt);
+	hand_copy->nand_bw 	    = bswap_32(hand_copy->nand_bw);
+	hand_copy->nand_rc 	    = bswap_32(hand_copy->nand_rc);
+	hand_copy->nand_ps 	    = bswap_32(hand_copy->nand_ps);
+	hand_copy->nand_ppb 	    = bswap_32(hand_copy->nand_ppb);
+	hand_copy->nand_force_erase = bswap_32(hand_copy->nand_force_erase);
+	hand_copy->nand_pn 	    = bswap_32(hand_copy->nand_pn);
+	hand_copy->nand_os 	    = bswap_32(hand_copy->nand_os);
+	hand_copy->nand_eccpos 	    = bswap_32(hand_copy->nand_eccpos);
+	hand_copy->nand_bbpage 	    = bswap_32(hand_copy->nand_bbpage);
+	hand_copy->nand_bbpos 	    = bswap_32(hand_copy->nand_bbpos);
+	hand_copy->nand_plane 	    = bswap_32(hand_copy->nand_plane);
+	hand_copy->nand_bchbit 	    = bswap_32(hand_copy->nand_bchbit);
+	hand_copy->nand_wppin 	    = bswap_32(hand_copy->nand_wppin);
+	hand_copy->nand_bpc 	    = bswap_32(hand_copy->nand_bpc);
+#endif
+
+
+	ingenic_dev.file_buff = hand_copy;
+	ingenic_dev.file_len = sizeof(struct hand);
 	if (usb_send_data_to_ingenic(&ingenic_dev) != 1)
 		goto xout;
+
+	free(hand_copy);
 
 	sleep(1);
 	if (usb_ingenic_configration(&ingenic_dev, DS_hand) != 1)
