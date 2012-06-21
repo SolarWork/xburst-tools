@@ -1,3 +1,8 @@
+xburst-tools version: 201206
+  [ Xiangfu Liu ]
+  * add firmware makefile
+  * fix errir on BIG-ENDBIAN system
+
 xburst-tools version: 201105
   [ Xiangfu Liu ]
   * add new xburst tool: jzboot:

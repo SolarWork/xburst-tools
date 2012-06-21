@@ -1,13 +1,19 @@
+xburst-tools (201206-1) unstable; urgency=low
+
+  * Fix BIG-ENDIAN system error
+
+ -- Xiangfu Liu <xiangfu.z@gmail.com>  Thu, 21 Jun 2012 18:33:04 +0800
+
 xburst-tools (201105-1) unstable; urgency=low
 
-  * add new tool name `jzboot`, taken from commit 1d7a2f3
-  * add new command `reset` to usbboot
+  * Add new tool name `jzboot`, taken from commit 1d7a2f3
+  * Add new command `reset` to usbboot
 
  -- Xiangfu Liu <xiangfu@sharism.cc>  Thu, 03 Mar 2011 14:43:59 +0800
 
 xburst-tools (201012-1) unstable; urgency=low
 
-  * fix the nerase always erase good blocks, taken from commit fedb6d8
+  * Fix the nerase always erase good blocks, taken from commit fedb6d8
 
  -- Xiangfu Liu <xiangfu@sharism.cc>  Fri, 24 Dec 2010 13:24:30 +0800
 
