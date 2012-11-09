@@ -70,6 +70,7 @@ int main(int argc, char** argv)
 		return EXIT_SUCCESS;
 	}
 
+	xburst_h = NULL;
 	if (!strcmp(argv[1], "-u") || !strcmp(argv[1], "--upload")) {
 		if (argc != 4) {
 			show_help();

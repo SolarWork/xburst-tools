@@ -19,6 +19,14 @@
 #ifndef __COMMAND_LINE_H__
 #define __COMMAND_LINE_H__
 
+#define MAX_ARGC	10
+#define MAX_COMMAND_LENGTH	100
+
+int com_argc;
+char com_argv[MAX_ARGC][MAX_COMMAND_LENGTH];
+char *stage1;
+char *stage2;
+
 int command_handle(char *buf);
 
 #endif	/* __COMMAND_LINE_H__ */

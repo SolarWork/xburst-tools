@@ -1,4 +1,9 @@
-AM_CFLAGS = -pedantic -Wall -W -DCFGDIR=\"$(cfgdir)\" -DDATADIR=\"$(pkgdatadir)\"
+AM_CFLAGS = -DCFGDIR=\"$(cfgdir)\" -DDATADIR=\"$(pkgdatadir)\" \
+	-std=gnu99 \
+	-Wall -Wshadow -Wmissing-prototypes \
+	-Wmissing-declarations -Wno-format-zero-length \
+	-Wno-unused -Wno-implicit-function-declaration \
+	-Wno-missing-prototypes -Wno-missing-declarations
 
 bin_PROGRAMS = usbboot
 usbboot_SOURCES = cmd.c  command_line.c  ingenic_cfg.c  \

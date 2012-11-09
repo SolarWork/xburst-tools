@@ -20,6 +20,7 @@
 #define __INGENIC_CFG_H__
 
 #include "usb_boot_defines.h"
+#include "ingenic_usb.h"
 
 int hand_init_def(struct hand *hand);
 int check_dump_cfg(struct hand *hand);

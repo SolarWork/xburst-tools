@@ -21,36 +21,28 @@
 #include <string.h>
 #include "usb_boot_defines.h"
 #include "ingenic_usb.h"
+#include "command_line.h"
 #include "cmd.h"
  
-extern struct nand_in nand_in;
-extern struct sdram_in sdram_in;
-extern unsigned char code_buf[4 * 512 * 1024];
-
-int com_argc;
-char com_argv[MAX_ARGC][MAX_COMMAND_LENGTH];
-char * stage1;
-char * stage2;
-
 static int handle_help(void)
 {
 	printf(
-	" boot       boot device and make it in stage2\n"
-	" reset      reset device\n"
-	" nprog      program NAND flash\n"
-	" nquery     query NAND flash info\n"
-	" nerase     erase NAND flash\n"
-	" nmark      mark a bad block in NAND flash\n"
-	" nread      read NAND flash data with checking bad block and ECC\n"
-	" nreadraw   read NAND flash data without checking bad block and ECC\n"
-	" nreadoob   read NAND flash oob\n"
-	" gpios      set one GPIO to high level\n"
-	" gpioc      set one GPIO to low level\n"
-	" load       load file data to SDRAM\n"
-	" go         execute program in SDRAM\n"
-	" memtest    memory test\n"
-	" help       print this help\n"
-	" exit       \n");
+		" boot       boot device and make it in stage2\n"
+		" reset      reset device\n"
+		" nquery     query NAND flash info\n"
+		" nprog      program NAND flash\n"
+		" nerase     erase NAND flash\n"
+		" nmark      mark a bad block in NAND flash\n"
+		" nread      read NAND flash data with checking bad block and ECC\n"
+		" nreadraw   read NAND flash data without checking bad block and ECC\n"
+		" nreadoob   read NAND flash oob\n"
+		" gpios      set one GPIO to high level\n"
+		" gpioc      set one GPIO to low level\n"
+		" load       load file data to SDRAM\n"
+		" go         execute program in SDRAM\n"
+		" memtest    memory test\n"
+		" help       print this help\n"
+		" exit\n");
 
 	return 0;
 }
@@ -128,7 +120,7 @@ int handle_memtest(void)
 		size = 0;
 	}
 
-	debug_memory(atoi(com_argv[1]), start, size);
+	debug_memory(start, size);
 	return 0;
 }
 
@@ -142,7 +134,7 @@ int handle_gpio(int mode)
 		return -1;
 	}
 
-	debug_gpio(atoi(com_argv[2]), mode, atoi(com_argv[1]));
+	debug_gpio(mode, atoi(com_argv[1]));
 	return 0;
 }
 
@@ -175,7 +167,7 @@ int command_handle(char *buf)
 	com_argc = 0;
 	strcpy(com_argv[com_argc++], p);
 
-	while (p = strtok(NULL, "\n "))
+	while ((p = strtok(NULL, "\n ")) != NULL)
 		strcpy(com_argv[com_argc++], p);
 
 	if (!strcmp("boot", com_argv[0]))
@@ -211,7 +203,7 @@ int command_handle(char *buf)
 	else if (!strcmp("exit", com_argv[0]))
 		return -1;
 	else
-		printf(" type `help` show all commands\n", com_argv[0]);
+		printf(" type `help` show all commands\n");
 
 	return 0;
 }

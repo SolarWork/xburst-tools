@@ -125,7 +125,7 @@ int main(int argc, char **argv)
 		int i, loop = 0;
 
 		sub_cmd[loop++] = strtok(cmdpt, ";");
-		while (sub_cmd[loop++] = strtok(NULL, ";"))
+		while ((sub_cmd[loop++] = strtok(NULL, ";")) != NULL)
 			if (loop >= MAX_COMMANDS) {
 				printf(" -c only support 10 commands\n");
 				break;

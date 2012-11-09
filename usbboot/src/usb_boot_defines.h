@@ -83,7 +83,7 @@ enum SDRAM_OPS_TYPE {
 };
 
 enum DATA_STRUCTURE_OB {
-	DS_flash_info ,
+	DS_flash_info = 0,
 	DS_hand
 };
 

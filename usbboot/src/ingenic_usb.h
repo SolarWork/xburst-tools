@@ -21,6 +21,7 @@
 #define __INGENIC_USB_H__
 
 #include <stdint.h>
+#include "cmd.h"
 
 #define INGENIC_OUT_ENDPOINT	0x01
 #define INGENIC_IN_ENDPOINT	0x81
@@ -50,21 +51,24 @@ struct ingenic_dev {
 	struct usb_dev_handle *usb_handle;
 	uint8_t interface;
 	char cpu_info_buff[9];
-	char *file_buff;
+	unsigned char *file_buff;
 	unsigned int file_len;
 };
 
-int usb_ingenic_init(struct ingenic_dev *ingenic_dev);
-int usb_get_ingenic_cpu(struct ingenic_dev *ingenic_dev);
-int usb_ingenic_upload(struct ingenic_dev *ingenic_dev, int stage);
-void usb_ingenic_cleanup(struct ingenic_dev *ingenic_dev);
-int usb_send_data_address_to_ingenic(struct ingenic_dev *ingenic_dev, 
+int usb_ingenic_init(struct ingenic_dev *id);
+int usb_get_ingenic_cpu(struct ingenic_dev *id);
+int usb_ingenic_upload(struct ingenic_dev *id, int stage);
+void usb_ingenic_cleanup(struct ingenic_dev *id);
+int usb_send_data_address_to_ingenic(struct ingenic_dev *id,
 				     unsigned int stage_addr);
-int usb_send_data_to_ingenic(struct ingenic_dev *ingenic_dev);
-int usb_send_data_length_to_ingenic(struct ingenic_dev *ingenic_dev,
+int usb_send_data_to_ingenic(struct ingenic_dev *id);
+int usb_send_data_length_to_ingenic(struct ingenic_dev *id,
 				    int len);
-int usb_ingenic_nand_ops(struct ingenic_dev *ingenic_dev, int ops);
-int usb_read_data_from_ingenic(struct ingenic_dev *ingenic_dev,unsigned char *buff, unsigned int len);
-int usb_ingenic_reset(struct ingenic_dev *ingenic_dev, int ops);
+int usb_ingenic_nand_ops(struct ingenic_dev *id, int ops);
+int usb_ingenic_sdram_ops(struct ingenic_dev *id, int ops);
+int usb_read_data_from_ingenic(struct ingenic_dev *id, unsigned char *buff, unsigned int len);
+int usb_ingenic_reset(struct ingenic_dev *id, int ops);
+int usb_ingenic_start(struct ingenic_dev *id, int rqst, unsigned int stage_addr);
+int usb_ingenic_configration(struct ingenic_dev *id, int ops);
 
 #endif	/* __INGENIC_USB_H__ */

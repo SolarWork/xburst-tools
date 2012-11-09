@@ -18,6 +18,7 @@
 
 #include <stdarg.h>
 #include <stdio.h>
+#include <ctype.h>
 
 #include "debug.h"
 

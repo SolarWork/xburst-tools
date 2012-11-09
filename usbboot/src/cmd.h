@@ -22,17 +22,35 @@
 #include "usb_boot_defines.h"
 
 #define COMMAND_NUM 31
-#define MAX_ARGC	10
-#define MAX_COMMAND_LENGTH	100
+
+struct ingenic_dev ingenic_dev;
+struct hand hand;
+struct sdram_in sdram_in;
+struct nand_in nand_in;
+
+unsigned int total_size;
+unsigned char code_buf[4 * 512 * 1024];
+unsigned char check_buf[4 * 512 * 1024];
+unsigned char cs[16];
+unsigned char ret[8];
+
+static const char IMAGE_TYPE[][30] = {
+	"with oob and ecc",
+	"with oob and without ecc",
+	"without oob",
+};
 
 int boot(char *stage1_path, char *stage2_path);
 int init_nand_in();
+int nand_read(int mode);
 int nand_prog(void);
 int nand_query(void);
 int nand_erase(struct nand_in *nand_in);
-int debug_memory(int obj, unsigned int start, unsigned int size);
-int debug_gpio(int obj, unsigned char ops, unsigned char pin);
+int debug_memory(unsigned int start, unsigned int size);
+int debug_gpio(unsigned char ops, unsigned char pin);
 int debug_go(void);
 int device_reset(int ops);
+int nand_markbad(struct nand_in *nand_in);
+int sdram_load_file(struct sdram_in *sdram_in, char *file_path);
 
 #endif  /* __CMD_H__ */

@@ -28,38 +28,19 @@
 #include <ctype.h>
 #include <byteswap.h>
 #include "cmd.h"
+#include "command_line.h"
 #include "ingenic_cfg.h"
 #include "ingenic_usb.h"
 #include "ingenic_request.h"
 #include "usb_boot_defines.h"
 
-extern int com_argc;
-extern char com_argv[MAX_ARGC][MAX_COMMAND_LENGTH];
-extern char * stage1;
-
-struct ingenic_dev ingenic_dev;
-struct hand hand;
-struct sdram_in sdram_in;
-struct nand_in nand_in;
-
-unsigned int total_size;
-unsigned char code_buf[4 * 512 * 1024];
-unsigned char check_buf[4 * 512 * 1024];
-unsigned char cs[16];
-unsigned char ret[8];
-
-static const char IMAGE_TYPE[][30] = {
-	"with oob and ecc",
-	"with oob and without ecc",
-	"without oob",
-};
-
-static int load_file(struct ingenic_dev *ingenic_dev, const char *file_path)
+static int load_file(struct ingenic_dev *id, const char *file_path)
 {
-	struct stat fstat;
+	struct stat fst;
+	struct fw_args *fw_args_copy;
 	int fd, status, res = -1;
 
-	status = stat(file_path, &fstat);
+	status = stat(file_path, &fst);
 
 	if (status < 0) {
 		fprintf(stderr, "Error - can't get file size from '%s': %s\n",
@@ -67,8 +48,8 @@ static int load_file(struct ingenic_dev *ingenic_dev, const char *file_path)
 		goto out;
 	}
 
-	ingenic_dev->file_len = fstat.st_size;
-	ingenic_dev->file_buff = code_buf;
+	id->file_len = fst.st_size;
+	id->file_buff = code_buf;
 
 	fd = open(file_path, O_RDONLY);
 
@@ -78,15 +59,15 @@ static int load_file(struct ingenic_dev *ingenic_dev, const char *file_path)
 		goto out;
 	}
 
-	status = read(fd, ingenic_dev->file_buff, ingenic_dev->file_len);
+	status = read(fd, id->file_buff, id->file_len);
 
-	if (status < ingenic_dev->file_len) {
+	if (status < id->file_len) {
 		fprintf(stderr, "Error - can't read file '%s': %s\n",
 			file_path, strerror(errno));
 		goto close;
 	}
 
-	struct fw_args *fw_args_copy = malloc(sizeof(struct fw_args));
+	fw_args_copy = malloc(sizeof(struct fw_args));
 	if (!fw_args_copy)
 		goto close;
 
@@ -100,7 +81,7 @@ static int load_file(struct ingenic_dev *ingenic_dev, const char *file_path)
 #endif
 
 	/* write args to code */
-	memcpy(ingenic_dev->file_buff + 8, fw_args_copy,
+	memcpy(id->file_buff + 8, fw_args_copy,
 	       sizeof(struct fw_args));
 
 	free(fw_args_copy);
@@ -145,16 +126,17 @@ int get_ingenic_cpu()
 	return status;
 }
 
-/* after upload stage2. must init device */
+/* After upload stage2. we have to init the device */
 void init_cfg()
 {
+	struct hand *hand_copy;
 	int cpu = get_ingenic_cpu();
 	if (cpu != BOOT4740 && cpu != BOOT4750 && cpu != BOOT4760) {
 		printf(" Device unboot! boot it first!\n");
 		return;
 	}
 
-	struct hand *hand_copy = malloc(sizeof(struct hand));
+	hand_copy = malloc(sizeof(struct hand));
 	if (!hand_copy)
 		goto xout;
 
@@ -184,7 +166,7 @@ void init_cfg()
 #endif
 
 
-	ingenic_dev.file_buff = hand_copy;
+	ingenic_dev.file_buff = (unsigned char *)hand_copy;
 	ingenic_dev.file_len = sizeof(struct hand);
 	if (usb_send_data_to_ingenic(&ingenic_dev) != 1)
 		goto xout;
@@ -246,7 +228,7 @@ int error_check(unsigned char *org,unsigned char * obj,unsigned int size)
 	printf(" Comparing %d bytes - ", size);
 	for (i = 0; i < size; i++) {
 		if (org[i] != obj[i]) {
-			unsigned int s = (i < 8) ? i : i - 8; // start_dump
+			unsigned int s = (i < 8) ? i : i - 8;
 			printf("FAIL at off %d, wrote 0x%x, read 0x%x\n", i, org[i], obj[i]);
 			printf("  off %d write: %02x %02x %02x %02x %02x %02x %02x %02x"
 			       " %02x %02x %02x %02x %02x %02x %02x %02x\n", s,
@@ -265,15 +247,15 @@ int error_check(unsigned char *org,unsigned char * obj,unsigned int size)
 	return 1;
 }
 
-int nand_markbad(struct nand_in *nand_in)
+int nand_markbad(struct nand_in *ni)
 {
 	int cpu = get_ingenic_cpu();
 	if (cpu != BOOT4740 && cpu != BOOT4750 && cpu != BOOT4760) {
 		printf(" Device unboot! boot it first!\n");
 		return -1;
 	}
-	printf(" Mark bad block : %d\n",nand_in->start);
-	usb_send_data_address_to_ingenic(&ingenic_dev, nand_in->start);
+	printf(" Mark bad block : %d\n",ni->start);
+	usb_send_data_address_to_ingenic(&ingenic_dev, ni->start);
 	usb_ingenic_nand_ops(&ingenic_dev, NAND_MARK_BAD);
 	usb_read_data_from_ingenic(&ingenic_dev, ret, 8);
 	printf(" Mark bad block at %d\n",((ret[3] << 24) |
@@ -283,44 +265,45 @@ int nand_markbad(struct nand_in *nand_in)
 	return 0;
 }
 
-int nand_program_check(struct nand_in *nand_in, unsigned int *start_page)
+int nand_program_check(struct nand_in *ni, unsigned int *start_page)
 {
 	unsigned int i, page_num, cur_page = -1;
 	unsigned int start_addr;
 	unsigned short temp;
+	int cpu;
 	int status = -1;
 
-	printf(" Writing NAND page %d len %d...\n", nand_in->start, nand_in->length);
-	if (nand_in->length > (unsigned int)MAX_TRANSFER_SIZE) {
+	printf(" Writing NAND page %d len %d...\n", ni->start, ni->length);
+	if (ni->length > (unsigned int)MAX_TRANSFER_SIZE) {
 		printf(" Buffer size too long!\n");
 		goto err;
 	}
 
-	int cpu = get_ingenic_cpu();
+	cpu = get_ingenic_cpu();
 	if (cpu != BOOT4740 && cpu != BOOT4750 && cpu != BOOT4760) {
 		printf(" Device unboot! boot it first!\n");
 		goto err;
 	}
 
-	ingenic_dev.file_buff = nand_in->buf;
-	ingenic_dev.file_len = nand_in->length;
+	ingenic_dev.file_buff = ni->buf;
+	ingenic_dev.file_len = ni->length;
 	usb_send_data_to_ingenic(&ingenic_dev);
-	for (i = 0; i < nand_in->max_chip; i++) {
-		if ((nand_in->cs_map)[i] == 0)
+	for (i = 0; i < ni->max_chip; i++) {
+		if ((ni->cs_map)[i] == 0)
 			continue;
-		if (nand_in->option == NO_OOB) {
-			page_num = nand_in->length / hand.nand_ps;
-			if ((nand_in->length % hand.nand_ps) !=0)
+		if (ni->option == NO_OOB) {
+			page_num = ni->length / hand.nand_ps;
+			if ((ni->length % hand.nand_ps) !=0)
 				page_num++;
 		} else {
-			page_num = nand_in->length /
+			page_num = ni->length /
 				(hand.nand_ps + hand.nand_os);
-			if ((nand_in->length% (hand.nand_ps + hand.nand_os)) !=0)
+			if ((ni->length% (hand.nand_ps + hand.nand_os)) !=0)
 				page_num++;
 		}
-		temp = ((nand_in->option << 12) & 0xf000)  +
+		temp = ((ni->option << 12) & 0xf000)  +
 			((i<<4) & 0xff0) + NAND_PROGRAM;
-		if (usb_send_data_address_to_ingenic(&ingenic_dev, nand_in->start) != 1)
+		if (usb_send_data_address_to_ingenic(&ingenic_dev, ni->start) != 1)
 			goto err;
 		if (usb_send_data_length_to_ingenic(&ingenic_dev, page_num) != 1)
 			goto err;
@@ -330,13 +313,13 @@ int nand_program_check(struct nand_in *nand_in, unsigned int *start_page)
 			goto err;
 
 		printf(" Finish! (len %d start_page %d page_num %d)\n",
-		       nand_in->length, nand_in->start, page_num);
+		       ni->length, ni->start, page_num);
 
 		/* Read back to check! */
-		usb_send_data_address_to_ingenic(&ingenic_dev, nand_in->start);
+		usb_send_data_address_to_ingenic(&ingenic_dev, ni->start);
 		usb_send_data_length_to_ingenic(&ingenic_dev, page_num);
 
-		switch (nand_in->option) {
+		switch (ni->option) {
 		case OOB_ECC:
 			temp = ((OOB_ECC << 12) & 0xf000) +
 				((i << 4) & 0xff0) + NAND_READ;
@@ -348,15 +331,14 @@ int nand_program_check(struct nand_in *nand_in, unsigned int *start_page)
 			start_addr = page_num * (hand.nand_ps + hand.nand_os);
 			break;
 		case NO_OOB:
+		default:
 			temp = ((NO_OOB << 12) & 0xf000) +
 				((i << 4) & 0xff0) + NAND_READ;
 			start_addr = page_num * hand.nand_ps;
 			break;
-		default:
-			;
 		}
 
-		printf(" Checking %d bytes...", nand_in->length);
+		printf(" Checking %d bytes...", ni->length);
 		usb_ingenic_nand_ops(&ingenic_dev, temp);
 		usb_read_data_from_ingenic(&ingenic_dev, check_buf, start_addr);
 		usb_read_data_from_ingenic(&ingenic_dev, ret, 8);
@@ -364,17 +346,19 @@ int nand_program_check(struct nand_in *nand_in, unsigned int *start_page)
 		cur_page = (ret[3] << 24) | (ret[2] << 16) |  (ret[1] << 8) |
 			(ret[0] << 0);
 
-		if (nand_in->start == 0 && hand.nand_ps == 4096 &&
+		if (ni->start == 0 && hand.nand_ps == 4096 &&
 		    hand.fw_args.cpu_id == 0x4740) {
 			printf(" No check! end at page: %d\n", cur_page);
 			fflush(NULL);
 			continue;
 		}
 
-		if (!nand_in->check(nand_in->buf, check_buf, nand_in->length)) {
+		if (!ni->check(ni->buf, check_buf, ni->length)) {
 			struct nand_in bad;
-			// tbd: doesn't the other side skip bad blocks too? Can we just deduct 1 from cur_page?
-			// tbd: why do we only mark a block as bad if the last page in the block was written?
+			/*
+			 * tbd: doesn't the other side skip bad blocks too? Can we just deduct 1 from cur_page?
+			 * tbd: why do we only mark a block as bad if the last page in the block was written?
+			 */
 			bad.start = (cur_page - 1) / hand.nand_ppb;
 			if (cur_page % hand.nand_ppb == 0)
 				nand_markbad(&bad);
@@ -391,13 +375,15 @@ err:
 	return status;
 }
 
-int nand_erase(struct nand_in *nand_in)
+int nand_erase(struct nand_in *ni)
 {
 	unsigned int start_blk, blk_num, end_block;
+	unsigned short temp;
+	int cpu;
 	int i;
 
-	start_blk = nand_in->start;
-	blk_num = nand_in->length;
+	start_blk = ni->start;
+	blk_num = ni->length;
 	if (start_blk > (unsigned int)NAND_MAX_BLK_NUM)  {
 		printf(" Start block number overflow!\n");
 		return -1;
@@ -407,22 +393,22 @@ int nand_erase(struct nand_in *nand_in)
 		return -1;
 	}
 
-	int cpu = get_ingenic_cpu();
+	cpu = get_ingenic_cpu();
 	if (cpu != BOOT4740 && cpu != BOOT4750 && cpu != BOOT4760) {
 		printf(" Device unboot! boot it first!\n");
 		return -1;
 	}
 
-	for (i = 0; i < nand_in->max_chip; i++) {
-		if ((nand_in->cs_map)[i]==0)
+	for (i = 0; i < ni->max_chip; i++) {
+		if ((ni->cs_map)[i]==0)
 			continue;
 		printf(" Erasing No.%d device No.%d flash (start_blk %u blk_num %u)......\n",
-		       nand_in->dev, i, start_blk, blk_num);
+		       ni->dev, i, start_blk, blk_num);
 
 		usb_send_data_address_to_ingenic(&ingenic_dev, start_blk);
 		usb_send_data_length_to_ingenic(&ingenic_dev, blk_num);
 
-		unsigned short temp = ((i << 4) & 0xff0) + NAND_ERASE;
+		temp = ((i << 4) & 0xff0) + NAND_ERASE;
 		usb_ingenic_nand_ops(&ingenic_dev, temp);
 
 		usb_read_data_from_ingenic(&ingenic_dev, ret, 8);
@@ -446,23 +432,23 @@ int nand_erase(struct nand_in *nand_in)
 	return 1;
 }
 
-int nand_program_file(struct nand_in *nand_in, char *fname)
+int nand_program_file(struct nand_in *ni, char *fname)
 {
 
 	int flen, m, j, k;
-	unsigned int start_page = 0, page_num, code_len, offset, transfer_size;
+	unsigned int start_page = 0, code_len, offset, transfer_size;
 	int fd, status;
-	struct stat fstat;
+	struct stat fst;
 	struct nand_in n_in;
 
-	status = stat(fname, &fstat);
+	status = stat(fname, &fst);
 
 	if (status < 0) {
 		fprintf(stderr, "Error - can't get file size from '%s': %s\n",
 			fname, strerror(errno));
 		return -1;
 	}
-	flen = fstat.st_size;
+	flen = fst.st_size;
 
 	fd = open(fname, O_RDONLY);
 	if (fd < 0) {
@@ -471,9 +457,9 @@ int nand_program_file(struct nand_in *nand_in, char *fname)
 		return -1;
 	}
 
-	printf(" Programing No.%d device, flen %d, start page %d...\n",nand_in->dev, flen, nand_in->start);
-	n_in.start = nand_in->start / hand.nand_ppb;
-	if (nand_in->option == NO_OOB) {
+	printf(" Programing No.%d device, flen %d, start page %d...\n",ni->dev, flen, ni->start);
+	n_in.start = ni->start / hand.nand_ppb;
+	if (ni->option == NO_OOB) {
 		if (flen % (hand.nand_ppb * hand.nand_ps) == 0)
 			n_in.length = flen / (hand.nand_ps * hand.nand_ppb);
 		else
@@ -487,12 +473,12 @@ int nand_program_file(struct nand_in *nand_in, char *fname)
 				((hand.nand_ps + hand.nand_os) * hand.nand_ppb)
 				+ 1;
 	}
-	n_in.cs_map = nand_in->cs_map;
-	n_in.dev = nand_in->dev;
-	n_in.max_chip = nand_in->max_chip;
+	n_in.cs_map = ni->cs_map;
+	n_in.dev = ni->dev;
+	n_in.max_chip = ni->max_chip;
 	if (nand_erase(&n_in) != 1)
 		return -1;
-	if (nand_in->option == NO_OOB)
+	if (ni->option == NO_OOB)
 		transfer_size = (hand.nand_ppb * hand.nand_ps);
 	else
 		transfer_size = (hand.nand_ppb * (hand.nand_ps + hand.nand_os));
@@ -500,17 +486,12 @@ int nand_program_file(struct nand_in *nand_in, char *fname)
 	m = flen / transfer_size;
 	j = flen % transfer_size;
 	printf(" Size to send %d, transfer_size %d\n", flen, transfer_size);
-	printf(" Image type : %s\n", IMAGE_TYPE[nand_in->option]);
+	printf(" Image type : %s\n", IMAGE_TYPE[ni->option]);
 	printf(" It will cause %d times buffer transfer.\n", j == 0 ? m : m + 1);
 	fflush(NULL);
 
 	offset = 0;
 	for (k = 0; k < m; k++)	{
-		if (nand_in->option == NO_OOB)
-			page_num = transfer_size / hand.nand_ps;
-		else
-			page_num = transfer_size / (hand.nand_ps + hand.nand_os);
-
 		code_len = transfer_size;
 		status = read(fd, code_buf, code_len);
 		if (status < code_len) {
@@ -519,14 +500,14 @@ int nand_program_file(struct nand_in *nand_in, char *fname)
 			return -1;
 		}
 
-		nand_in->length = code_len; /* code length,not page number! */
-		nand_in->buf = code_buf;
-		if (nand_program_check(nand_in, &start_page) == -1)
+		ni->length = code_len; /* code length,not page number! */
+		ni->buf = code_buf;
+		if (nand_program_check(ni, &start_page) == -1)
 			return -1;
 
-		if (start_page - nand_in->start > hand.nand_ppb)
+		if (start_page - ni->start > hand.nand_ppb)
 			printf(" Info - skip bad block!\n");
-		nand_in->start = start_page;
+		ni->start = start_page;
 
 		offset += code_len ;
 	}
@@ -545,24 +526,18 @@ int nand_program_file(struct nand_in *nand_in, char *fname)
 			return -1;
 		}
 
-		nand_in->length = j;
-		nand_in->buf = code_buf;
-		if (nand_program_check(nand_in, &start_page) == -1)
+		ni->length = j;
+		ni->buf = code_buf;
+		if (nand_program_check(ni, &start_page) == -1)
 			return -1;
 
-		if (start_page - nand_in->start > hand.nand_ppb)
+		if (start_page - ni->start > hand.nand_ppb)
 			printf(" Info - skip bad block!");
 
 	}
 
 	close(fd);
 	return 1;
-}
-
-int nand_program_file_planes(struct nand_in *nand_in, char *fname)
-{
-	printf("  not implement yet !\n");
-	return -1;
 }
 
 int init_nand_in(void)
@@ -612,20 +587,19 @@ int nand_prog(void)
 	else
 		printf("%s", help);
 
-	if (hand.nand_plane > 1)
-		nand_program_file_planes(&nand_in, image_file);
-	else
+	if (hand.nand_plane == 1)
 		nand_program_file(&nand_in, image_file);
 
 	status = 1;
-err:
+
 	return status;
 }
 
 int nand_query(void)
 {
-	int i;
+	int cpu, i;
 	unsigned char csn;
+	unsigned short ops;
 
 	if (com_argc < 3) {
 		printf(" Usage: nquery (1) (2)\n"
@@ -645,7 +619,7 @@ int nand_query(void)
 	if (i >= nand_in.max_chip)
 		return -1;
 
-	int cpu = get_ingenic_cpu();
+	cpu = get_ingenic_cpu();
 	if (cpu != BOOT4740 && cpu != BOOT4750 && cpu != BOOT4760) {
 		printf(" Device unboot! boot it first!\n");
 		return -1;
@@ -654,7 +628,7 @@ int nand_query(void)
 	csn = i;
 	printf(" ID of No.%d device No.%d flash: \n", nand_in.dev, csn);
 
-	unsigned short ops = ((csn << 4) & 0xff0) + NAND_QUERY;
+	ops = ((csn << 4) & 0xff0) + NAND_QUERY;
 	usb_ingenic_nand_ops(&ingenic_dev, ops);
 	usb_read_data_from_ingenic(&ingenic_dev, ret, 8);
 	printf(" Vendor ID    :0x%x \n",(unsigned char)ret[0]);
@@ -670,7 +644,7 @@ int nand_query(void)
 
 int nand_read(int mode)
 {
-	unsigned int i, j, cpu;
+	unsigned int cpu, j;
 	unsigned int start_addr, length, page_num;
 	unsigned char csn;
 	unsigned short temp = 0;
@@ -752,7 +726,7 @@ int nand_read(int mode)
 	return 1;
 }
 
-int debug_memory(int obj, unsigned int start, unsigned int size)
+int debug_memory(unsigned int start, unsigned int size)
 {
 	unsigned int buffer[8],tmp;
 
@@ -790,7 +764,7 @@ int debug_memory(int obj, unsigned int start, unsigned int size)
 		return -1;
 
 	usleep(100);
-	usb_read_data_from_ingenic(&ingenic_dev, buffer, 8);
+	usb_read_data_from_ingenic(&ingenic_dev, (unsigned char *)buffer, 8);
 	if (buffer[0] != 0)
 		printf(" Test memory fail! Last error address is 0x%x !\n",
 		       buffer[0]);
@@ -800,7 +774,7 @@ int debug_memory(int obj, unsigned int start, unsigned int size)
 	return 1;
 }
 
-int debug_gpio(int obj, unsigned char ops, unsigned char pin)
+int debug_gpio(unsigned char ops, unsigned char pin)
 {
 	unsigned int tmp;
 
@@ -847,7 +821,7 @@ int debug_gpio(int obj, unsigned char ops, unsigned char pin)
 
 int debug_go(void)
 {
-	unsigned int addr,obj;
+	unsigned int addr, obj;
 	if (com_argc<3) {
 		printf(" Usage: go (1) (2) \n"
 		       " 1:start SDRAM address\n"
@@ -866,7 +840,7 @@ int debug_go(void)
 	return 1;
 }
 
-int sdram_load(struct sdram_in *sdram_in)
+int sdram_load(struct sdram_in *si)
 {
 	int cpu = get_ingenic_cpu();
 	if (cpu != BOOT4740 && cpu != BOOT4750 && cpu != BOOT4760) {
@@ -874,17 +848,17 @@ int sdram_load(struct sdram_in *sdram_in)
 		return -1;
 	}
 
-	if (sdram_in->length > (unsigned int) MAX_LOAD_SIZE) {
+	if (si->length > (unsigned int) MAX_LOAD_SIZE) {
 		printf(" Image length too long!\n");
 		return -1;
 	}
 
-	ingenic_dev.file_buff = sdram_in->buf;
-	ingenic_dev.file_len = sdram_in->length;
+	ingenic_dev.file_buff = si->buf;
+	ingenic_dev.file_len = si->length;
 	usb_send_data_to_ingenic(&ingenic_dev);
-	usb_send_data_address_to_ingenic(&ingenic_dev, sdram_in->start);
-	usb_send_data_length_to_ingenic(&ingenic_dev, sdram_in->length);
-	usb_ingenic_sdram_ops(&ingenic_dev, sdram_in);
+	usb_send_data_address_to_ingenic(&ingenic_dev, si->start);
+	usb_send_data_length_to_ingenic(&ingenic_dev, si->length);
+	usb_ingenic_sdram_ops(&ingenic_dev, SDRAM_LOAD);
 
 	usb_read_data_from_ingenic(&ingenic_dev, ret, 8);
 	printf(" Load last address at 0x%x\n",
@@ -893,19 +867,19 @@ int sdram_load(struct sdram_in *sdram_in)
 	return 1;
 }
 
-int sdram_load_file(struct sdram_in *sdram_in, char *file_path)
+int sdram_load_file(struct sdram_in *si, char *file_path)
 {
-	struct stat fstat;
-	unsigned int flen,m,j,offset,k;
+	struct stat fst;
+	unsigned int flen, m, j, k;
 	int fd, status, res = -1;
 
-	status = stat(file_path, &fstat);
+	status = stat(file_path, &fst);
 	if (status < 0) {
 		fprintf(stderr, "Error - can't get file size from '%s': %s\n",
 			file_path, strerror(errno));
 		goto out;
 	}
-	flen = fstat.st_size;
+	flen = fst.st_size;
 
 	fd = open(file_path, O_RDONLY);
 	if (fd < 0) {
@@ -916,40 +890,39 @@ int sdram_load_file(struct sdram_in *sdram_in, char *file_path)
 
 	m = flen / MAX_LOAD_SIZE;
 	j = flen % MAX_LOAD_SIZE;
-	offset = 0;
 
 	printf(" Total size to send in byte is :%d\n", flen);
 	printf(" Loading data to SDRAM :\n");
 
 	for (k = 0; k < m; k++) {
-		status = read(fd, sdram_in->buf, MAX_LOAD_SIZE);
+		status = read(fd, si->buf, MAX_LOAD_SIZE);
 		if (status < MAX_LOAD_SIZE) {
 			fprintf(stderr, "Error - can't read file '%s': %s\n",
 				file_path, strerror(errno));
 			goto close;
 		}
 
-		sdram_in->length = MAX_LOAD_SIZE;
-		if (sdram_load(sdram_in) < 1)
+		si->length = MAX_LOAD_SIZE;
+		if (sdram_load(si) < 1)
 			goto close;
 
-		sdram_in->start += MAX_LOAD_SIZE;
+		si->start += MAX_LOAD_SIZE;
 		if ( k % 60 == 0)
-			printf(" 0x%x \n", sdram_in->start);
+			printf(" 0x%x \n", si->start);
 	}
 
 	if (j) {
 		if (j % 4 !=0)
 			j += 4 - (j % 4);
-		status = read(fd, sdram_in->buf, j);
+		status = read(fd, si->buf, j);
 		if (status < j) {
 			fprintf(stderr, "Error - can't read file '%s': %s\n",
 				file_path, strerror(errno));
 			goto close;
 		}
 
-		sdram_in->length = j;
-		if (sdram_load(sdram_in) < 1)
+		si->length = j;
+		if (sdram_load(si) < 1)
 			goto close;
 	}
 

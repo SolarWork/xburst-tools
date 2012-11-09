@@ -1,4 +1,4 @@
-AM_CFLAGS = -pedantic -Wall -W -std=gnu99 -DDATADIR=\"$(pkgdatadir)\"
+AM_CFLAGS = -Wall -W -std=gnu99 -DDATADIR=\"$(pkgdatadir)\"
 
 bin_PROGRAMS = xbboot
 xbboot_SOURCES = host_main.c
