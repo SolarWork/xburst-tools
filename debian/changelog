@@ -2,7 +2,7 @@ xburst-tools (201206-1) unstable; urgency=low
 
   * Fix BIG-ENDIAN system error, taken from commit bf5b9f6
 
- -- Xiangfu Liu <xiangfu.z@gmail.com>  Thu, 21 Jun 2012 18:33:04 +0800
+ -- Xiangfu Liu <xiangfu@sharism.cc>  Thu, 21 Jun 2012 18:33:04 +0800
 
 xburst-tools (201105-1) unstable; urgency=low
 
